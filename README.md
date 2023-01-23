@@ -19,6 +19,6 @@ Please consult 'example' subdirectory to see illustrative use of launchers with 
 # Dependencies
 
 * Third-party libraries
-  * Apache commons-io.jar (Version 2.4)
+  * [Apache commons-io.jar](https://commons.apache.org/proper/commons-io/) (Version 2.4)
 * Runtime environment
   * Developed and tested on Oracle 1.8 and OpenJDK 8 ([Recommended download](https://adoptium.net/temurin/releases/?version=8)).  
