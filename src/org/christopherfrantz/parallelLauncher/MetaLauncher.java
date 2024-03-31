@@ -118,7 +118,7 @@ public class MetaLauncher extends Launcher {
 	/**
 	 * Sets the frequency which MetaLauncher instances use to check their 
 	 * queue status. For short-running MetaLaunchers, it might be desirable to 
-	 * modify the default value ({@value #queueCheckFrequency} minutes) to 
+	 * modify the default value ({@value #queueCheckFrequencyMetaLauncher} minutes) to
 	 * minimize waiting times. 
 	 * Time can be specified using decimal digits (to represent fraction of minutes, 
 	 * e.g. 3.5).
@@ -136,7 +136,7 @@ public class MetaLauncher extends Launcher {
 	/**
 	 * Sets the frequency which MetaLauncher instances use to check their 
 	 * queue status. For short-running processes, it might be desirable to 
-	 * modify the default value ({@value #queueCheckFrequency} minutes) to 
+	 * modify the default value ({@value #queueCheckFrequencyMetaLauncher} minutes) to
 	 * minimize waiting times. 
 	 * @param frequencyInMinutes Checking frequency in minutes
 	 */

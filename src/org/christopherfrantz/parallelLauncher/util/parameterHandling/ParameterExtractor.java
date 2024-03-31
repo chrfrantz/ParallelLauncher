@@ -52,7 +52,7 @@ public class ParameterExtractor {
 	/**
 	 * Returns list of all parameter names in parameter file (and the number of value variations of respective parameter).
 	 * @param parameterFile
-	 * @return
+	 * @return ArrayList<String>
 	 * @throws ParameterExtractorException
 	 */
 	public static ArrayList<String> getAllParameterNames(String parameterFile) throws ParameterExtractorException {
@@ -94,7 +94,7 @@ public class ParameterExtractor {
 	
 	/**
 	 * Returns the index for a given parameter name for the parameter arrays contained in parameter file.
-	 * Returns -1 if parameter name could not found. Throws exception if parameter file or header could not be found.
+	 * Returns -1 if parameter name could not be found. Throws exception if parameter file or header could not be found.
 	 * @param parameterFile Parameter file to inspect
 	 * @param parameterName Parameter of interest (for which the index is to be returned)
 	 * @return Index of instance array indicating the parameter value
@@ -113,7 +113,7 @@ public class ParameterExtractor {
 						while(tokenizer.hasMoreTokens()) {
 							String token = tokenizer.nextToken().trim();
 							
-							if (token == null || token.isEmpty() || !token.contains(parameterName)) {
+							if (token.isEmpty() || !token.contains(parameterName)) {
 								// should not really be empty ever, but guarding against format manipulations
 								index++;
 								continue;
@@ -176,7 +176,7 @@ public class ParameterExtractor {
 	 * If type is unspecified, this method treats it as String.
 	 * @param parameterFile Parameter file containing all specifications.
 	 * @param parameterName Parameter name (whose array position is to be matched based on parameter file)
-	 * @param parameterArray Parameter set the value is to be extracted from
+	 * @param parameterArray Simulation instance parameter set passed to simulation instance and to be extracted from
 	 * @param type Parameter data type (class)
 	 * @return Extracted parameter value as specified type
 	 * @throws ParameterExtractorException
@@ -469,7 +469,7 @@ public class ParameterExtractor {
 	 * Extracts parameter array from parameter file (specified in {@link #parameterFile}).
 	 * Returns each value once and stores picked values in {@link #usedParameterFile}.
 	 * Throws a ParameterExhaustedException once all parameters from file used, or a 
-	 * a more general ParameterExtractorException in case of other problems.
+	 * more general ParameterExtractorException in case of other problems.
 	 * @return Parameter array
 	 * @throws ParameterExtractorException 
 	 */
@@ -482,7 +482,7 @@ public class ParameterExtractor {
 	 * folder if no path specified as part of filename).
 	 * Returns each value once and stores picked values in {@link #usedParameterFile}.
 	 * Throws a ParameterExhaustedException once all parameters from file used, or a 
-	 * a more general ParameterExtractorException in case of other problems.
+	 * more general ParameterExtractorException in case of other problems.
 	 * @param parameterFile Parameter file to be used
 	 * @return
 	 * @throws ParameterExtractorException 

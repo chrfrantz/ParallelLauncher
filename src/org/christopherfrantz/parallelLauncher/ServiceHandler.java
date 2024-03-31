@@ -99,7 +99,7 @@ public final class ServiceHandler implements ProcessStatusListener {
 	
 	/**
 	 * Returns the number of running processes
-	 * @return
+	 * @return Number of running processes
 	 */
 	public int getNumberOfRunningProcesses(){
 		return startCounter - endCounter;

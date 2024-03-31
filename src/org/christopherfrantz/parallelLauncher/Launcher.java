@@ -235,7 +235,7 @@ public abstract class Launcher {
 	/**
 	 * Awaits user input on keyboard and blocks for specified 
 	 * time or until the user enters something. 
-	 * See {@link #awaitUserInput(int, String, String...)}
+	 * See {@link #awaitUserInput(long, String, String...)}
 	 * for a more refined variant.
 	 * @param maxWaitingTime Maximum waiting time
 	 */
@@ -286,8 +286,7 @@ public abstract class Launcher {
 	 * @param maxWaitingTime Maximum waiting time
 	 * @param action String representation for action (for console output)
 	 * @param specialInput Pairs of testing input and action description.
-	 * @param alternativeAction Alternative action description (if special input is found).
-	 * @return Returns 1 if user has pressed key, 
+	 * @return Returns 1 if user has pressed key,
 	 * 		2 or higher if user entered value specified in specialInput parameter prior to pressing enter, 
 	 * 		else 0 (simply timed out). Return -1 upon error.
 	 */
@@ -364,7 +363,7 @@ public abstract class Launcher {
 	/**
   	 * Filename holding information about maximum number of parallel launchers and
   	 * processes to be started. Is used to check config at runtime if 
-  	 * {@link #configFileCheckForLauncherConfiguration} is activated.
+  	 * ParallelLauncher.configFileCheckForLauncherConfiguration is activated.
   	 */
   	public static final String PARALLEL_LAUNCHER_RUNTIME_CONFIG_FILE = "ParallelLauncher_RuntimeConfig";
   	

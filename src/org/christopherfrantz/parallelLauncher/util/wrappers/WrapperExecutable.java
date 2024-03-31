@@ -59,21 +59,22 @@ public class WrapperExecutable {
 	private static String classNameOfClassToBeLaunched = null;
 	
 	public static void main(String[] args){
-		//expect at least three parameters, but there may be more that are passed on to the executable
+		// expect at least three parameters, but there may be more that are passed on to the executable
 		if(args.length < numberOfExpectedParameters){
-			throw new RuntimeException("Attempted to run executable from ParallelLauncher failed.");
+			throw new RuntimeException("Attempted to run executable from ParallelLauncher failed: " +
+					"Insufficient number of parameters in WrapperExecutable.");
 		}
-		//expect first parameter to be redirection information
-		//expect second parameter to redirection outfile - will be passed along as null if redirection deactivated
+		// expect first parameter to be redirection information
+		// expect second parameter to redirection outfile - will be passed along as null if redirection deactivated
 		redirectionOutFilename = args[1];
 		
-		//perform redirection
+		// perform redirection
 		redirect(args[0], redirectionOutFilename);
 		
-		//third parameter: identifier for launched class file
+		// third parameter: identifier for launched class file
 		identifier = args[2];
 		
-		//prepare eventual parameters for main method
+		// prepare eventual parameters for main method
 		final String[] parametersForMainMethod = new String[args.length - numberOfExpectedParameters];
 		if(args.length > numberOfExpectedParameters){
 			int paramCt = 0;
@@ -82,19 +83,20 @@ public class WrapperExecutable {
 				paramCt++;
 			}
 		}
-		//register shutdown hook to handle exit code of class to be invoked
+		// register shutdown hook to handle exit code of class to be invoked
 		addExitCodeCapturingShutdownHook();
 		
-		//save name of class to be launched
+		// save name of class to be launched
 		classNameOfClassToBeLaunched = args[3];
 		
-		//expect fourth parameter to be executable class
+		// expect fourth parameter to be executable class
 		try {
 			Class classToBeRun = Class.forName(classNameOfClassToBeLaunched);
 			//System.out.println("Invoking class " + classToBeRun.getCanonicalName() + " with " + parametersForMainMethod.length + " parameters.");
-			//invoke passed executables main method
+			// invoke passed executables main method
 			classToBeRun.getMethod("main", String[].class).invoke(null, (Object)parametersForMainMethod);
-		} catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+		} catch (Exception e) { // Should capture everything, including RuntimeException -
+			// Launch-related specific exceptions: (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 			if(e.getClass().equals(InvocationTargetException.class)){
 				System.err.println("Exception in launched executable '"+ classNameOfClassToBeLaunched + "':");
 				e.getCause().printStackTrace();
@@ -109,7 +111,7 @@ public class WrapperExecutable {
 	/**
 	 * Sets up redirection according to redirection type and routes output to specified file 
 	 * in addition to console output. Creates file if not already existing.
-	 * @param type redirection type as specified in constants in {@link #WrapperExecutable()}.
+	 * @param type redirection type as specified in constants in {@link WrapperExecutable}.
 	 * @param filename
 	 */
 	private static void redirect(String type, String filename){
@@ -141,12 +143,12 @@ public class WrapperExecutable {
 				try {
 					outWriter = new FileOutputStream(filename);
 					
-					//Combined outputstream instance (file and console) for error
+					// Combined OutputStream instance (file and console) for error
 					MultiOutputStream multiErr = new MultiOutputStream(System.err, outWriter);
-					//redirect stderr in any case
+					// Redirect stderr in any case
 					System.setErr(new PrintStream(multiErr));
 					
-					//redirect stdout only if requested
+					// Redirect stdout only if requested
 					if(type.equals(REDIRECT_BOTH)){
 						MultiOutputStream multiOut = new MultiOutputStream(System.out, outWriter);
 						System.setOut(new PrintStream(multiOut));

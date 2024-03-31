@@ -3,7 +3,7 @@ package org.christopherfrantz.parallelLauncher;
 /**
  * This launcher is a special ParallelLauncher type. Once started it runs 
  * infinitely and prevents any other waiting launcher instances from starting.
- * It is suitable to setup a large number of launchers without being interrupted
+ * It is suitable to set up a large number of launchers without being interrupted
  * by starting launchers (especially if they cause high CPU load).<BR>
  * Another purpose is to prevent waiting ParallelLaunchers from starting without 
  * destroying them (e.g. system maintenance of an otherwise unusable system). 

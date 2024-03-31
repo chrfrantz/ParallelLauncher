@@ -114,7 +114,7 @@ public class ParallelLauncher extends Launcher {
 
 	/**
 	 * Returns the number of classes registered for launching.
-	 * @return
+	 * @return Number of classes registered for launching
 	 */
 	protected static int getNumberOfClassesToBeLaunched(){
 		return classesToBeLaunched.size();
@@ -2484,7 +2484,7 @@ public class ParallelLauncher extends Launcher {
 	/**
 	 * Returns the formatted current date/time as String (for output/logging purposes)
 	 * supported formats:
-	 * "yyyy-MM-dd HH:mm:ss", "HH:mm:ss" (see constants {@link DATE_FORMAT_NOW} and {@link TIME_FORMAT_NOW}).  
+	 * "yyyy-MM-dd HH:mm:ss", "HH:mm:ss" (see constants {@link #DATE_FORMAT_NOW} and {@link #TIME_FORMAT_NOW}).
 	 * @param includingDate Boolean indicating if date should be returned or only time 
 	 * @return String representation of current time
 	 */

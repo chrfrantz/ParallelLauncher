@@ -10,7 +10,7 @@ import org.christopherfrantz.parallelLauncher.util.listeners.ProcessStatusListen
  * 
  * Used internally by ParallelLauncher
  * 
- * @author cfrantz
+ * @author Christopher Frantz
  *
  */
 public final class CombinedClassAndStatusListener {
