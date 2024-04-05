@@ -68,7 +68,7 @@ public class LinuxProcessReader extends ProcessReader {
 		    			if (line.contains(processNameList.get(i))) {
 		    				processes.add(line);
 		    			}
-		    		}		    		
+		    		}
 		    	}
 		    }
 		    processReader.close();
@@ -119,7 +119,6 @@ public class LinuxProcessReader extends ProcessReader {
 				    	}
 				    }
 				    processGetCreationTimeReader.close();
-		    		
 		    	}
 		    }
 		    processReader.close();

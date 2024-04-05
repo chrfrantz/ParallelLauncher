@@ -190,7 +190,7 @@ public class ParallelLauncher extends Launcher {
 	 * Registers a class to be launched as part of the ParallelLauncher instance.
 	 * @param classToBeLaunched Class that should be launched
 	 * @param checkOnly Indicates that class should only be checked for (e.g. when 
-	 * 			determining running processes, but not be actually launched.
+	 * 			determining running processes, but not be actually launched).
 	 */
 	protected static void addClassToBeLaunched(Class classToBeLaunched, boolean checkOnly){
 		addClassToBeLaunched(classToBeLaunched, checkOnly, null);
@@ -349,7 +349,7 @@ public class ParallelLauncher extends Launcher {
 	 * processes. Default value: 15 seconds. 
 	 * Note: This does not affect the queue check frequency used for checking number of 
 	 * queued launchers (set via {@link #setQueueCheckingFrequency(Double)}).
-	 * @param frequencyInMinutes
+	 * @param frequencyInMinutes Frequency in minutes
 	 */
 	protected static void setProcessCheckFrequencyForProcessesStartedByLauncherItself(Double frequencyInMinutes){
 		if(frequencyInMinutes == null){
@@ -467,7 +467,7 @@ public class ParallelLauncher extends Launcher {
   	}
   	
   	/**
-  	 * Calculates and assigns affinity mask for processsor cores. 
+  	 * Calculates and assigns affinity mask for processor cores.
   	 * Enter the desired core IDs as individual parameters (e.g. 0, 1). 
   	 * Note that core IDs are zero-based. Invalid Core IDs (e.g. negative, duplicate
   	 * values or exceeding available cores) are ignored.
@@ -485,7 +485,7 @@ public class ParallelLauncher extends Launcher {
   	}
   	
   	/**
-  	 * Calculates and assigns affinity mask for processsor cores. 
+  	 * Calculates and assigns affinity mask for processor cores.
   	 * Enter the core IDs to be in/excluded as individual parameters (e.g. 0, 1). 
   	 * Note that core IDs are zero-based. Invalid Core IDs (e.g. negative, duplicate
   	 * values or exceeding available cores) are ignored. 

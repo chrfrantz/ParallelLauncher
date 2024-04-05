@@ -59,7 +59,6 @@ public abstract class Launcher {
 	
 	/**
 	 * Structure holding duration-related information.
-	 * 
 	 */
 	public static class Duration {
 		

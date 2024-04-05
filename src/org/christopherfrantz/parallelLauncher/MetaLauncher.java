@@ -78,7 +78,7 @@ public class MetaLauncher extends Launcher {
 	}
 	
 	/**
-	 * IPC file reference used for interaction with launched organicFarming.launchers (to await proper startup before starting subsequent organicFarming.launchers)
+	 * IPC file reference used for interaction with launched ParallelLauncher (to await proper startup before starting subsequent ParallelLauncher)
 	 */
 	private static File ipcFile = null;
 	
@@ -101,15 +101,15 @@ public class MetaLauncher extends Launcher {
 	public static int maxNumberOfMetaLaunchersRunningAtOneTime = 1;
 	
 	/**
-	 * Indicates the maximum number of organicFarming.launchers running/waiting at the same time.
+	 * Indicates the maximum number of ParallelLaunchers running/waiting at the same time.
 	 * Reduces memory load and WMI stress. -1 deactivates any limitation, i.e. 
-	 * all specified organicFarming.launchers will be queued at once. Default: 4
+	 * all specified ParallelLaunchers will be queued at once. Default: 4
 	 */
 	public static int maxNumberOfQueuedOrRunningLaunchersAtOneTime = 4;
 	
 	/**
 	 * Waiting time (in milliseconds) between checks on running processes 
-	 * data structure in order to determine whether further organicFarming.launchers can
+	 * data structure in order to determine whether further ParallelLaunchers can
 	 * be started. Only used if 
 	 * {@link #maxNumberOfQueuedOrRunningLaunchersAtOneTime} != -1. Default: 120000
 	 */
@@ -164,7 +164,7 @@ public class MetaLauncher extends Launcher {
 	public static int currentMachineID = defaultMachineID;
 	
 	/**
-	 * Special user input that triggers launch of all remaining organicFarming.launchers overriding
+	 * Special user input that triggers launch of all remaining ParallelLaunchers overriding
 	 * the threshold specified in {@link #maxNumberOfQueuedOrRunningLaunchersAtOneTime}.
 	 */
 	private static final String inputToTriggerLaunchOfAllProcesses = "all";
@@ -213,7 +213,7 @@ public class MetaLauncher extends Launcher {
 						new ArrayList<File>(FileUtils.listFiles(subfolder, FileFilterUtils.prefixFileFilter(unifiedJarFile + "_"), null));
 				if(!unifiedJars.isEmpty()){
 					System.out.println(ParallelLauncher.getCurrentTimeString(true) + 
-							": " + PREFIX + "Deleting unified JAR(s) after termination of all organicFarming.launchers: " + unifiedJars.toString());
+							": " + PREFIX + "Deleting unified JAR(s) after termination of all ParallelLaunchers: " + unifiedJars.toString());
 					for(int i = 0; i < unifiedJars.size(); i++){
 						if(FileUtils.deleteQuietly(unifiedJars.get(i))){
 							if(debug){
@@ -271,7 +271,7 @@ public class MetaLauncher extends Launcher {
 	
 	/**
 	 * Registers a listener for this MetaLauncher that is called upon termination of 
-	 * all scheduled organicFarming.launchers.
+	 * all scheduled ParallelLaunchers.
 	 * @param listener
 	 */
 	public static void registerMetaLauncherListener(MetaLauncherListener listener){
@@ -282,7 +282,7 @@ public class MetaLauncher extends Launcher {
 	
 	/**
 	 * Notifies all registered MetaLauncherListeners about finished execution 
-	 * of all scheduled organicFarming.launchers.
+	 * of all scheduled ParallelLaunchers.
 	 */
 	private static void notifyListeners(){
 		for(int i = 0; i < listeners.size(); i++){
@@ -338,7 +338,7 @@ public class MetaLauncher extends Launcher {
 		//Generate name for unified JAR file if activated
 		if(createOneJarFileForAllLaunchers){
 			unifiedJarFile = String.valueOf(System.currentTimeMillis());
-				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": "+ PREFIX + "Using unified JAR file '" + unifiedJarFile + "' for all organicFarming.launchers.");
+				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": "+ PREFIX + "Using unified JAR file '" + unifiedJarFile + "' for all ParallelLaunchers.");
 			//JARify classpath to avoid side effects if sources are manipulated after initial launch
 			classpath = ParallelLauncher.createJARifiedClasspath(classpath, unifiedJarFile, false);
 			if(debug){
@@ -370,7 +370,7 @@ public class MetaLauncher extends Launcher {
 				int start = !dynamicLauncher ? 0 : (entry.getValue().totalNumberOfInstancesToBeLaunched() - entry.getValue().remainingNumberOfInstancesToBeLaunched());  
 				//switch to allow overriding the maximum permissible number of queued launcher - used when release all using console command 'all'
 				boolean overrideMaxQueuedLauncher = false;
-				//start number of organicFarming.launchers - but consider dynamic changes at runtime
+				//start number of ParallelLaunchers - but consider dynamic changes at runtime
 				for(int i = start; i < entry.getValue().totalNumberOfInstancesToBeLaunched(); i++){
 					System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Launch number " + (i + 1) 
 							+ " (out of " + entry.getValue().totalNumberOfInstancesToBeLaunched() + ") for ParallelLauncher '" 
@@ -413,7 +413,7 @@ public class MetaLauncher extends Launcher {
 						
 						if(process != null && !process.isFinished()){
 							System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": MetaLauncher: Launcher '" + name + "' successfully launched. Observe status in its Monitor GUI; closing the GUI ends the process.");
-							//register with data structure that maintains reference to running organicFarming.launchers
+							//register with data structure that maintains reference to running ParallelLaunchers
 							runningProcesses.add(process.getProcess());
 							process.registerListener(processStatusListener);
 							//consider this launch successful (and maintain stats-related information)
@@ -439,23 +439,23 @@ public class MetaLauncher extends Launcher {
 						i--;
 					}
 									
-					//check if not too many organicFarming.launchers running
+					//check if not too many ParallelLaunchers running
 					if(maxNumberOfQueuedOrRunningLaunchersAtOneTime > -1 && 
 							//and if further are to be started - if not, no point of blocking here
 							i < (entry.getValue().totalNumberOfInstancesToBeLaunched() - 1)){
 						if(maxNumberOfQueuedOrRunningLaunchersAtOneTime == 0){
-							System.err.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Value zero for max. number of running organicFarming.launchers is invalid. Deactivated functionality.");
+							System.err.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Value zero for max. number of running ParallelLaunchers is invalid. Deactivated functionality.");
 							maxNumberOfQueuedOrRunningLaunchersAtOneTime = -1;
 						}
-						//Wait for number of active organicFarming.launchers to drop, or user intervention
-						//Switch to release further organicFarming.launchers
+						//Wait for number of active ParallelLaunchers to drop, or user intervention
+						//Switch to release further ParallelLaunchers
 						boolean release = false;
 						//check if less than max processes running
 						release = runningProcesses.size() < maxNumberOfQueuedOrRunningLaunchersAtOneTime;
 						//if not, do repeated checks
 						while(!release){
 							System.out.println(ParallelLauncher.getCurrentTimeString(true) 
-									+ ": " + PREFIX + "Currently " + runningProcesses.size() + " active organicFarming.launchers. "
+									+ ": " + PREFIX + "Currently " + runningProcesses.size() + " active ParallelLaunchers. "
 									+ "Waiting for those to drop below " + maxNumberOfQueuedOrRunningLaunchersAtOneTime
 									+ " before starting further ones. Recheck in "
 									+ queueCheckFrequencyMetaLauncher + " ms.");
@@ -472,7 +472,7 @@ public class MetaLauncher extends Launcher {
 									release = true;
 									break;
 								case -1:
-									// Release all organicFarming.launchers
+									// Release all ParallelLaunchers
 									release = true;
 									overrideMaxQueuedLauncher = true;
 									break;
@@ -489,7 +489,7 @@ public class MetaLauncher extends Launcher {
 							//check if no user-caused release, check for condition-based release
 							if(!release){
 								if(maxNumberOfQueuedOrRunningLaunchersAtOneTime > -1 
-									//keep rechecking as long as too many running processes/organicFarming.launchers
+									//keep rechecking as long as too many running processes/ParallelLaunchers
 									&& runningProcesses.size() >= maxNumberOfQueuedOrRunningLaunchersAtOneTime) {
 										//do nothing
 								} else {
@@ -503,7 +503,7 @@ public class MetaLauncher extends Launcher {
 		}
 		// MetaLauncher is done; if unified JARs are activated, it can be deleted once the final process has terminated
 		launchingFinished = true;
-		String msg = ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "All specified organicFarming.launchers have been started.";
+		String msg = ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "All specified ParallelLaunchers have been started.";
 		
 		// Show CLI while processes are running
 		while (!runningProcesses.isEmpty()) {
@@ -516,7 +516,7 @@ public class MetaLauncher extends Launcher {
 	 * Shows the CLI for MetaLauncher interaction.
 	 * @param waitTime Waiting time until returning control.
 	 * @param instanceCounter Instance counter reference
-	 * @param dynamicLauncher Indicator whether the launcher is dynamic (i.e. adapts to changing number of organicFarming.launchers over time)
+	 * @param dynamicLauncher Indicator whether the launcher is dynamic (i.e. adapts to changing number of ParallelLaunchers over time)
 	 * @param launchedLauncherInstances Counter of already launched instances
 	 * @param msg Message to be printed before showing user selection
 	 * @return Indicates the number of instances to be release (-1 = all remaining instances)
@@ -529,7 +529,7 @@ public class MetaLauncher extends Launcher {
 		// Allow user selection
 		int result = awaitUserInput(waitTime, "recheck", 
 				"one", "release one additional launcher", 
-				inputToTriggerLaunchOfAllProcesses, "release all remaining organicFarming.launchers",
+				inputToTriggerLaunchOfAllProcesses, "release all remaining ParallelLaunchers",
 				"debug", "toggle debug mode", 
 				"time", "show the elapsed time since launcher start",
 				"stats", "show runtime per process and estimated remaining runtime",
@@ -546,9 +546,9 @@ public class MetaLauncher extends Launcher {
 				// Release one
 				return 1;
 			case 3:
-				// Set max number of queued organicFarming.launchers to -1 --> infinite and release
+				// Set max number of queued ParallelLaunchers to -1 --> infinite and release
 				maxNumberOfQueuedOrRunningLaunchersAtOneTime = -1;
-				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Bypassing maximum number of permissible organicFarming.launchers and launch all remaining ones.");
+				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Bypassing maximum number of permissible ParallelLaunchers and launch all remaining ones.");
 				return -1;
 			case 4:
 				// Toggle debug
@@ -598,7 +598,7 @@ public class MetaLauncher extends Launcher {
 						System.getProperty("line.separator") +
 						"  Current value: " + maxNumberOfMetaLaunchersRunningAtOneTime);
 				System.out.println("Parameter '" + MAX_QUEUED_LAUNCHERS_BY_METALAUNCHER_KEY + 
-						"' specifies the maximum number of queued or running organicFarming.launchers (spawned by one or more MetaLaunchers) at any given time." +
+						"' specifies the maximum number of queued or running ParallelLaunchers (spawned by one or more MetaLaunchers) at any given time." +
 						System.getProperty("line.separator") +
 						"  In practice this is the commonly used parameter to control load. " +
 						System.getProperty("line.separator") +
@@ -662,7 +662,7 @@ public class MetaLauncher extends Launcher {
 	 * position in queue
 	 * -2 if BlockingParallelLauncher is running (to prevent immediate 
 	 * start of MetaLauncher and launcher instances)
-	 * 0 if first element in queue (should initiate start of organicFarming.launchers),
+	 * 0 if first element in queue (should initiate start of ParallelLaunchers),
 	 * else number of MetaLaunchers in queue before this launcher.
 	 * @return
 	 */
@@ -700,8 +700,8 @@ public class MetaLauncher extends Launcher {
 			//if one launcher running and creation of temporary JAR files deactivated, warn user about confounded setups
 			/*if(output.size() == 1 && !createTemporaryJarFilesForQueueing){
 				System.err.println("=== Starting further launcher instances or working on source files should NOT be done" + System.getProperty("line.separator")
-						+ "if you are running organicFarming.launchers from an IDE that compiles source files automatically as it will affect all queued organicFarming.launchers." + System.getProperty("line.separator")
-						+ "Activate the generation of temporary JAR files if you want to queue more organicFarming.launchers or work on source files during launcher runs. ===");
+						+ "if you are running ParallelLaunchers from an IDE that compiles source files automatically as it will affect all queued ParallelLaunchers." + System.getProperty("line.separator")
+						+ "Activate the generation of temporary JAR files if you want to queue more ParallelLaunchers or work on source files during launcher runs. ===");
 			} else {*/
 			System.out.println(PREFIX + "=== SUCCESS! You can now safely start further MetaLauncher instances. ===");
 			//}
@@ -722,13 +722,13 @@ public class MetaLauncher extends Launcher {
 		}
 		for(int i = 0; i < output.size(); i++){
 			if(output.get(i).equals(myStartTime)){
-				System.out.println(PREFIX + "Queued behind " + i + " MetaLauncher(s) (in total " + output.size() + " queued organicFarming.launchers).");
+				System.out.println(PREFIX + "Queued behind " + i + " MetaLauncher(s) (in total " + output.size() + " queued ParallelLaunchers).");
 				return i;
 			}
 		}
 		/*
 		 * some invalid response as I should otherwise have been able to provide the number
-		 * of organicFarming.launchers queued before me.
+		 * of ParallelLaunchers queued before me.
 		 */
 		return -1;
 	}
@@ -794,7 +794,7 @@ public class MetaLauncher extends Launcher {
 							testAgain = false;
 							//should have been started properly at this stage
 						} else {
-							System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Process '" + name + "' did not receive valid WMI response, need to wait and recheck before starting further organicFarming.launchers.");
+							System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Process '" + name + "' did not receive valid WMI response, need to wait and recheck before starting further ParallelLaunchers.");
 							try {
 								Thread.sleep(defaultWaitingTime);
 							} catch (InterruptedException e) {
