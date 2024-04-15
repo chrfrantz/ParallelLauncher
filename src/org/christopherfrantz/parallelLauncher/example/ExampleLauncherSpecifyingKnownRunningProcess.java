@@ -2,6 +2,9 @@ package org.christopherfrantz.parallelLauncher.example;
 
 import org.christopherfrantz.parallelLauncher.ParallelLauncher;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /**
  * Launcher exemplifying specification of known process for inquiring OS processes.
  * This is useful to detect potentially unreliable reporting of running executables
@@ -26,7 +29,7 @@ public class ExampleLauncherSpecifyingKnownRunningProcess extends ParallelLaunch
 		 * of ParallelLauncher, even if WMI is overused.
 		 */
 		checkForKnownProcessAsWmiFailureBackupCheck = true;
-		knownRunningProcessName = "explorer.exe";
+		knownRunningProcessName = new ArrayList<>(Arrays.asList("explorer.exe"));
 		
 		addClassToBeLaunched(IndependentExecutable1.class);
 		

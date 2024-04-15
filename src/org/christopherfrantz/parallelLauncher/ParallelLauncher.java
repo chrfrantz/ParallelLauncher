@@ -6,14 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Scanner;
-import java.util.StringTokenizer;
+import java.util.*;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -750,8 +743,8 @@ public class ParallelLauncher extends Launcher {
 	 * Good values could be the IDE you are using (e.g. "eclipse.exe") or generic OS services (e.g., "explorer.exe" on Windows).
 	 * Check TaskManager for processes.
 	 */
-	protected static String knownRunningProcessName = ProcessReader.runsOnWindows() ? "explorer.exe":
-		(ProcessReader.runsOnLinux() ? "equinox.launcher" : null);
+	protected static ArrayList<String> knownRunningProcessName = ProcessReader.runsOnWindows() ? new ArrayList<>(Arrays.asList("explorer.exe")):
+		(ProcessReader.runsOnLinux() ? new ArrayList<>(Arrays.asList("equinox.launcher", "intellij")) : new ArrayList<>());
   	
 	/**
 	 * Indicates if batch files for creation of JARs are deleted after 
@@ -1158,9 +1151,9 @@ public class ParallelLauncher extends Launcher {
 						//ensure that no further running classes before starting
 						&& !runningProcessesRunningJavaClasses.isEmpty())
 				)
-				//and check if known process is found (if check is activates) - SHOULD be found if activated
+				//and check if known process is found (if check is activated) - SHOULD be found if activated
 				|| (checkForKnownProcessAsWmiFailureBackupCheck ? 
-						processReader.retrieveProcessesWithName(knownRunningProcessName).isEmpty() : false)
+						processReader.retrieveProcessesWithNames(knownRunningProcessName).isEmpty() : false)
 		){
 			String reason = null;
 			//determine reason for wait
@@ -1175,7 +1168,7 @@ public class ParallelLauncher extends Launcher {
 				reason = "Reason for wait: Processes of previous launcher still seem to be running (" 
 					+ runningProcessesRunningJavaClasses.size() + " processes)";
 			} else if((checkForKnownProcessAsWmiFailureBackupCheck ? 
-					processReader.retrieveProcessesWithName(knownRunningProcessName).isEmpty() : false)){
+					processReader.retrieveProcessesWithNames(knownRunningProcessName).isEmpty() : false)){
 				reason = "Reason for wait: Check for backup process '" + knownRunningProcessName 
 						+ "' failed. OS-specific process retrieval not functioning properly?";
 			}
