@@ -29,7 +29,7 @@ public class ExampleLauncherSpecifyingKnownRunningProcess extends ParallelLaunch
 		 * of ParallelLauncher, even if WMI is overused.
 		 */
 		checkForKnownProcessAsWmiFailureBackupCheck = true;
-		knownRunningProcessName = new ArrayList<>(Arrays.asList("explorer.exe"));
+		knownRunningProcessNames = new ArrayList<>(Arrays.asList("explorer.exe"));
 		
 		addClassToBeLaunched(IndependentExecutable1.class);
 		

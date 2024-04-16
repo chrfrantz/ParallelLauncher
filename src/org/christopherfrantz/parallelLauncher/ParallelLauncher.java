@@ -241,28 +241,28 @@ public class ParallelLauncher extends Launcher {
 	public static void setArgumentsToBePassedToLaunchedClasses(String... args){
 		if(args != null && args.length > 0){
 			int index = 0;
-			//check if already arguments specified
+			// Check if already arguments specified
 			if(argumentsToBePassedToLaunchedClasses != null 
 					&& argumentsToBePassedToLaunchedClasses.length > 0){
 				String[] tempArr = new String[argumentsToBePassedToLaunchedClasses.length + args.length];
-				//save old array content
+				// Save old array content
 				while(index < argumentsToBePassedToLaunchedClasses.length){
 					tempArr[index] = argumentsToBePassedToLaunchedClasses[index];
 					index++;
 				}
-				//assign to original field
+				// Assign to original field
 				argumentsToBePassedToLaunchedClasses = tempArr;
 			} else {
-				//no previous arguments - instantiate new array
+				// no previous arguments - instantiate new array
 				argumentsToBePassedToLaunchedClasses = new String[args.length];
 			}
-			//save new arguments
+			// Save new arguments
 			for(int i = 0; i < args.length; i++){
 				if(args[i].contains(" ")){
 					System.err.println(PREFIX + "The argument '" + args[i] + "' to be passed to launched classes contains whitespace character(s)!" 
 							+ System.getProperty("line.separator") + "Note that this might lead to unintended behaviour (separation into different arguments).");
 				}
-				//add to argument array
+				// Add to argument array
 				argumentsToBePassedToLaunchedClasses[index + i] = args[i];
 			}
 		} else {
@@ -733,17 +733,19 @@ public class ParallelLauncher extends Launcher {
 	 * Activates check for other known process name to ensure that WMI is actually working when submitting queries 
 	 * (important before starting new set of child processes). 
 	 * Should be true (!) unless good reason not to (e.g. no known process to check) as WMI information is unreliable.
-	 * Remember to specify 'knownRunningProcessName'. */
+	 * Remember to specify 'knownRunningProcessName'.
+	 */
 	protected static boolean checkForKnownProcessAsWmiFailureBackupCheck = true;
 	
 	/**
-	 * Process name (.exe file) of continuously running process when running ParallelLauncher.
-	 * Used to ensure that WMI is working properly. Used in conjunction with 
+	 * Process name(s) (executable) of continuously running process(es) when running ParallelLauncher.
+	 * Used to ensure that Windows Management Instrumentation (WMI) is working properly. Used in conjunction with
 	 * checkForKnownProcessAsWmiFailureBackupCheck.
 	 * Good values could be the IDE you are using (e.g. "eclipse.exe") or generic OS services (e.g., "explorer.exe" on Windows).
-	 * Check TaskManager for processes.
+	 * Also supports partial names (e.g., "intellij"). Note that services should be OS-dependent. Check TaskManager for processes.
+	 * The evaluation would require the presence of at least one of the processes to continue execution.
 	 */
-	protected static ArrayList<String> knownRunningProcessName = ProcessReader.runsOnWindows() ? new ArrayList<>(Arrays.asList("explorer.exe")):
+	protected static ArrayList<String> knownRunningProcessNames = ProcessReader.runsOnWindows() ? new ArrayList<>(Arrays.asList("explorer.exe")):
 		(ProcessReader.runsOnLinux() ? new ArrayList<>(Arrays.asList("equinox.launcher", "intellij")) : new ArrayList<>());
   	
 	/**
@@ -943,7 +945,7 @@ public class ParallelLauncher extends Launcher {
 				//TODO: Introduce affinity for Linux
 				runOnLimitedProcessors = false;
 			} else {
-				//deactivate process affinity support if only one processor
+				// Deactivate process affinity support if only one processor
 				System.out.println(PREFIX + "Processor affinity support deactivated as only one available core.");
 				runOnLimitedProcessors = false;
 			}
@@ -951,16 +953,16 @@ public class ParallelLauncher extends Launcher {
 		
 				
 		String classpath = System.getProperty("java.class.path");
-		//opens self-closing console if not running on Windows Vista/7
+		// Opens self-closing console if not running on Windows Vista/7
 		final boolean openConsoleWindowIfNotUsingWindowsVistaAndHigher = false;
-		//opens console window (non-self-closing on Windows 7 (Vista?)) on all systems
+		// Opens console window (non-self-closing on Windows 7 (Vista?)) on all systems
 		final boolean openConsoleWindow = false;
 		
 		/**
 		 * Basic validation of classes to be launched in parallel
 		 */
 		
-		//Check if there is anything to launch in the first place
+		// Check if there is anything to launch in the first place
 		if(classesToBeLaunched.isEmpty() && !launcherClass.equals(BlockingParallelLauncher.class)){
 			System.out.println(PREFIX + "Nothing to be launched. Exiting ...");
 			if(launcherClass.equals(ParallelLauncher.class)){
@@ -971,7 +973,7 @@ public class ParallelLauncher extends Launcher {
 			return;
 		}
 		
-		//Check if classes to be run have main methods....
+		// Check if classes to be run have main methods....
 		for(int i = 0; i < classesToBeLaunched.size(); i++){
 			try {
 				classesToBeLaunched.get(i).clazz.getMethod("main", String[].class);
@@ -984,13 +986,13 @@ public class ParallelLauncher extends Launcher {
 			}
 		}
 		
-		//delete config file if requested (unless ignored for individual launcher anyway), and thus use in-launcher configuration
+		// Delete config file if requested (unless ignored for individual launcher anyway), and thus use in-launcher configuration
 		if(!(launcherStartedWithoutMetaLauncher && ignoreConfigFileIfStartingIndividualParallelLauncher) 
 				&& configFileCheckForLauncherConfiguration && resetLauncherAndProcessConfigurationFilesAtStartup){
 			FileUtils.deleteQuietly(new File(PARALLEL_LAUNCHER_RUNTIME_CONFIG_FILE));
 		}
 		
-		//Check if processor-selection makes sense
+		// Check if processor-selection makes sense
 		if(maxNumberOfRunningLaunchedProcesses > Runtime.getRuntime().availableProcessors()
 				&& classesToBeLaunched.size() > Runtime.getRuntime().availableProcessors()){
 			System.err.println(PREFIX + "Your system is configured to launch more processes " 
@@ -1000,13 +1002,13 @@ public class ParallelLauncher extends Launcher {
 				+ System.getProperty("line.separator")+ "This is not a problem, but it might lead to sub-optimal performance. Specifically watch your memory consumption.");
 		}
 		
-		//Print current configuration to console - passing information for actual launcher check frequency, and status of child processes of previous launcher
+		// Print current configuration to console - passing information for actual launcher check frequency, and status of child processes of previous launcher
 		printCurrentConfiguration(launcherCheckFrequency, processCheckFrequencyForOtherLaunchersRunningProcesses);
 		
 		/**
 		 * Creation of temporary JARs
 		 */
-		//Check if the launcher is supposed to build JAR files from class files to prevent side effects.
+		// Check if the launcher is supposed to build JAR files from class files to prevent side effects.
 		if(createTemporaryJarFilesForQueueing && !launcherClass.equals(BlockingParallelLauncher.class)){
 			if(createTemporaryClasspathVariable){
 				//local-variable version (set CLASSPATH=%CLASSPATH%;newJarFile.jar)
@@ -1017,9 +1019,9 @@ public class ParallelLauncher extends Launcher {
 			}
 		}
 	
-		//build command (incl. classpath) but without launched class specification - note the different quotation marks to capture space issues
-		//see http://stackoverflow.com/questions/12891383/correct-quoting-for-cmd-exe-for-multiple-arguments for details on cmd /C syntax
-		//CF: 20131026 - Deactivated differentiated quoting as single-quoting seems best...
+		// build command (incl. classpath) but without launched class specification - note the different quotation marks to capture space issues
+		// see http://stackoverflow.com/questions/12891383/correct-quoting-for-cmd-exe-for-multiple-arguments for details on cmd /C syntax
+		// CF: 20131026 - Deactivated differentiated quoting as single-quoting seems best...
 		boolean simpleQuotes = true;//(jdkBinPath == null);
 		//use doublequotes if explicit JDK path (which potentially has white spaces in it) is required
 		String javaExeCommand = (simpleQuotes ? "java" : "\"\"" + buildJdkBinDirectoryString() + "java\"\"");
@@ -1037,19 +1039,19 @@ public class ParallelLauncher extends Launcher {
 		 * 		      and queue position permits inclusion, progress to process check. 
 		 */
 		int launchersQueuedBeforeMe = myTurnInRunning();
-		//Has the process been properly registered in WMI (i.e. return value != -1)? If so, status will not be rewritten later.
+		// Check whether the process been properly registered in WMI (i.e. return value != -1)? If so, status will not be rewritten later.
 		boolean validOSProcessExecutionFeedback = launchersQueuedBeforeMe != -1;
-		//write to IPC file if existing
+		// Write to IPC file if existing
 		writeStatusToMetaLauncherIpcFile(launchersQueuedBeforeMe);
 		
 		if(debug){
 			System.out.println(PREFIX + "Max. number of allowed active launchers: " + maxNumberOfActiveParallelLaunchers + ", number in queue: " + launchersQueuedBeforeMe);
 		}
 		
-		//update eventual configuration before initial check
+		// Update eventual configuration before initial check
 		updateLauncherAndProcessConfiguration();
 		
-		//-1 indicates WMI problem, -2 indicates running blocking launcher
+		// -1 indicates WMI problem, -2 indicates running blocking launcher
 		while(launchersQueuedBeforeMe == -1 || launchersQueuedBeforeMe == -2 || launchersQueuedBeforeMe > maxNumberOfActiveParallelLaunchers - 1){
 			try {
 				/*
@@ -1062,12 +1064,12 @@ public class ParallelLauncher extends Launcher {
 						(launchersQueuedBeforeMe / (float)maxNumberOfActiveParallelLaunchers)).intValue());
 				if(adaptiveQueueCheckActivatedAndDataAvailable()){
 					if(launchersQueuedBeforeMe > 0){
-						//currently running launcher's project remaining runtime
+						// Currently running launcher's project remaining runtime
 						long runningLaunchersRemainingRuntime = lastLaunchersLongestProcessDuration - (System.currentTimeMillis() - runningLauncherFirstProcessStartTime);
-						//only use remaining runtime information if greater than 0, else it may be old launcher start time, so ignore it
+						// only use remaining runtime information if greater than 0, else it may be old launcher start time, so ignore it
 						actualSleepTime = Math.round(((runningLaunchersRemainingRuntime > 0 ? runningLaunchersRemainingRuntime : 0)
 								+ launchersQueuedBeforeMe * lastLaunchersLongestProcessDuration)
-								//add some tolerance
+								// add some tolerance
 								* adaptiveCheckTolerance);
 						if(debug){
 							System.out.println(PREFIX + "Adapted queue check delay to " + actualSleepTime + " ms.");
@@ -1076,35 +1078,35 @@ public class ParallelLauncher extends Launcher {
 				}
 				if(launcherClass.equals(BlockingParallelLauncher.class)){
 					System.err.println("BLOCKING LAUNCHER: Blocking all other launchers from starting. Stop me in order to let others proceed.");
-					//sleep forever
+					// Sleep forever
 					Thread.sleep(Long.MAX_VALUE);
 				} else {
 					System.out.println(getCurrentTimeString(true) 
 							+ ": Waiting for other launcher(s) to start. Next check in " 
 							+ actualSleepTime/1000 + " seconds.");
-					//check if user presses enter to initiate recheck
+					// Check if user presses enter to initiate recheck
 					int res = awaitUserInput(actualSleepTime, "to perform recheck", "debug", "toggle debug mode and perform recheck");
-					//toggle debug mode if requested
+					// Toggle debug mode if requested
 					if(res == 2){
 						toggleDebugMode();
 					}
 				}
 			} catch (InterruptedException e) {
-				//if thread sleep makes problems
+				// if thread sleep makes problems
 				e.printStackTrace();
 			}
-			//check for eventual configuration updates
+			// Check for eventual configuration updates
 			updateLauncherAndProcessConfiguration();
-			//check again after waiting
+			// Check again after waiting
 			launchersQueuedBeforeMe = myTurnInRunning();
 			/*
 			 * check for WMI registration (if not happened before) - 
 			 * once VALID WMI status has been received (i.e. not -1), write to IPC file - and never again after that
 			 */
 			if(!validOSProcessExecutionFeedback){
-				//test again and update status
+				// Test again and update status
 				validOSProcessExecutionFeedback = launchersQueuedBeforeMe != -1;
-				//write current state to IPC file
+				// Write current state to IPC file
 				writeStatusToMetaLauncherIpcFile(launchersQueuedBeforeMe);
 			}
 		}
@@ -1132,7 +1134,7 @@ public class ParallelLauncher extends Launcher {
 			System.out.println(PREFIX + "Number of currently running processes: " + runningProcessesRunningJavaClasses.size());
 		}
 		
-		if (knownRunningProcessName == null) {
+		if (knownRunningProcessNames == null) {
 			throw new RuntimeException(PREFIX + "Cannot test for running reference process, since OS could not be detected.");
 		}
 		
@@ -1142,34 +1144,34 @@ public class ParallelLauncher extends Launcher {
 					just to be sure WMI (if running Windows) is doing its job (implying that the actual process needs to be running!)
 				*/
 				(
-					//if more than one launcher allowed,
+					// if more than one launcher allowed,
 						(maxNumberOfActiveParallelLaunchers > 1 && maxNumberOfRunningLaunchedProcesses != -1
 						//check if enough 'space' for parallel processes before launching
 						&& (runningProcessesRunningJavaClasses.size() + classesToBeLaunched.size()) > maxNumberOfRunningLaunchedProcesses)
-					//or, if only one launcher allowed,
+					// or, if only one launcher allowed,
 					|| (maxNumberOfActiveParallelLaunchers == 1
 						//ensure that no further running classes before starting
 						&& !runningProcessesRunningJavaClasses.isEmpty())
 				)
-				//and check if known process is found (if check is activated) - SHOULD be found if activated
+				// and check if known process is found (if check is activated) - SHOULD be found if activated
 				|| (checkForKnownProcessAsWmiFailureBackupCheck ? 
-						processReader.retrieveProcessesWithNames(knownRunningProcessName).isEmpty() : false)
+						processReader.retrieveProcessesWithNames(knownRunningProcessNames).isEmpty() : false)
 		){
 			String reason = null;
-			//determine reason for wait
+			// Determine reason for wait
 			if((maxNumberOfActiveParallelLaunchers > 1 && maxNumberOfRunningLaunchedProcesses != -1
-					//check if enough 'space' for parallel processes before launching
+					// Check if enough 'space' for parallel processes before launching
 					&& (runningProcessesRunningJavaClasses.size() + classesToBeLaunched.size()) > maxNumberOfRunningLaunchedProcesses)){
 				reason = "Reason for wait: Not enough slots to launch " + classesToBeLaunched.size() 
 						+ " classes. Max number of allowed processes: " + maxNumberOfRunningLaunchedProcesses;
 			} else if((maxNumberOfActiveParallelLaunchers == 1
-					//ensure that no further running classes before starting
+					// Ensure that no further running classes before starting
 					&& !runningProcessesRunningJavaClasses.isEmpty())){
 				reason = "Reason for wait: Processes of previous launcher still seem to be running (" 
 					+ runningProcessesRunningJavaClasses.size() + " processes)";
 			} else if((checkForKnownProcessAsWmiFailureBackupCheck ? 
-					processReader.retrieveProcessesWithNames(knownRunningProcessName).isEmpty() : false)){
-				reason = "Reason for wait: Check for backup process '" + knownRunningProcessName 
+					processReader.retrieveProcessesWithNames(knownRunningProcessNames).isEmpty() : false)){
+				reason = "Reason for wait: Check for backup process '" + knownRunningProcessNames
 						+ "' failed. OS-specific process retrieval not functioning properly?";
 			}
 				
@@ -1190,14 +1192,14 @@ public class ParallelLauncher extends Launcher {
 					}
 				}
 			}
-			//introduce delay when queued depending on number of allowed parallel launchers to avoid overuse
+			// Introduce delay when queued depending on number of allowed parallel launchers to avoid overuse
 			int progressiveCheckDelay = (maxNumberOfActiveParallelLaunchers + 1) * processCheckFrequencyForOtherLaunchersRunningProcesses;
 			//System.out.println("Number of classes: " + runningProcessesRunningJavaClasses.size() + ": " + DataStructurePrettyPrinter.decomposeRecursively(runningProcessesRunningJavaClasses, null));
 			
 			if(adaptiveQueueCheckActivatedAndDataAvailable()){
-				//currently running launcher's project remaining runtime
+				// currently running launcher's project remaining runtime
 				long runningLaunchersRemainingRuntime = lastLaunchersLongestProcessDuration - (System.currentTimeMillis() - runningLauncherFirstProcessStartTime);
-				//only use remaining runtime information if greater than 0, else it may be old launcher start time, so ignore it
+				// only use remaining runtime information if greater than 0, else it may be old launcher start time, so ignore it
 				if(runningLaunchersRemainingRuntime > 0){
 					progressiveCheckDelay = Math.round(runningLaunchersRemainingRuntime * adaptiveCheckTolerance);
 					if(debug){
@@ -1207,15 +1209,15 @@ public class ParallelLauncher extends Launcher {
 			}
 			
 			System.out.println(getCurrentTimeString(true) + ": Waiting before performing recheck. Next check in " + (progressiveCheckDelay / 1000) + " seconds. (" + reason + ")");
-			//pressing enter will abort timeout and recheck immediately
+			// pressing enter will abort timeout and recheck immediately
 			int res = awaitUserInput(progressiveCheckDelay, "recheck immediately", "debug", "toggle debug mode and recheck immediately");
 			if(res == 2){
 				toggleDebugMode();
 			}
 			
-			//check if launcher and process configuration has been updated
+			// Check if launcher and process configuration has been updated
 			updateLauncherAndProcessConfiguration();
-			//retrieve all running Java classes to recheck conditions for launching
+			// Retrieve all running Java classes to recheck conditions for launching
 			runningProcessesRunningJavaClasses = processReader.retrieveProcessesRunningJavaClasses(classesToBeTestedInRunningProcesses);
 			if(debug){
 				System.out.println(PREFIX + "Number of currently running processes: " + runningProcessesRunningJavaClasses.size());
@@ -1228,7 +1230,7 @@ public class ParallelLauncher extends Launcher {
 			System.out.println(PREFIX + "Running processes: " + DataStructurePrettyPrinter.decomposeRecursively(runningProcessesRunningJavaClasses, null));
 		}
 		
-		//remove old temporary JAR files of previous launchers if existing
+		// Remove old temporary JAR files of previous launchers if existing
 		cleanUpTemporaryJarFiles();
 				
 		
@@ -1265,20 +1267,20 @@ public class ParallelLauncher extends Launcher {
 			listOfClassesActuallyLaunched.add(classesToBeLaunched.get(i).clazz);
 		}
 		
-		//counter for launched classes
+		// Counter for launched classes
 		int launchCt = 0;
 		
 		for(Class classToBeLaunched: listOfClassesActuallyLaunched){
 			System.out.println(getCurrentTimeString(true) + ": Attempting to start instance '" + classToBeLaunched.getSimpleName() + "'.");
 			Process launchedClassProcess = null;
-			//wrapper for launched process
+			// Wrapper for launched process
 			ProcessWrapper wrapper = null;
 			
 			// Generate OS-dependent launch script
 			File scriptFile = runLaunchScriptGeneration(classToBeLaunched, classpath, javaExeCommand, openConsoleWindow, openConsoleWindowIfNotUsingWindowsVistaAndHigher, processorAffinityPrefixWindowsVistaAndHigher, processorAffinityPrefix);
 			
 			
-			//wait for batch file to be created (in case of delayed execution)
+			// Wait for batch file to be created (in case of delayed execution)
 			while(!scriptFile.exists()){
 				try {
 					System.out.println(PREFIX + "Waiting for batch file '" + scriptFile.getName() + "' to be created ...");
@@ -1288,7 +1290,7 @@ public class ParallelLauncher extends Launcher {
 					e.printStackTrace();
 				}
 			}
-			//Run script file
+			// Run script file
 			try {
 				String startCommand;
 				if (ProcessReader.runsOnLinux()) {
@@ -1319,7 +1321,7 @@ public class ParallelLauncher extends Launcher {
 				}
 				ProcessBuilder pb = new ProcessBuilder(tokenizeCommandStringToArrayList(startCommand));
 				launchedClassProcess = pb.start();
-				//execute all registered listeners upon start (and register listeners for process termination)
+				// Execute all registered listeners upon start (and register listeners for process termination)
 				wrapper = new ProcessWrapper(classToBeLaunched.getSimpleName(), launchedClassProcess, ParallelLauncher.class); 
 				executeListeners(wrapper, classToBeLaunched);
 				
@@ -1335,29 +1337,29 @@ public class ParallelLauncher extends Launcher {
 					}
 				}
 				try{
-					//that call should throw exception - then the process is running.
+					// that call should throw exception - then the process is running.
 					int exitVal = launchedClassProcess.exitValue();
 					System.out.println(getCurrentTimeString(true) + ": Execution of batch file spawning process '" + classToBeLaunched.getSimpleName() + "' has finished. Exit code: " + exitVal);
 					if(exitVal != 0){
 						throw new RuntimeException(PREFIX + "Unexpected response for Process " + classToBeLaunched.getSimpleName() + ": " + printProcessOutput(launchedClassProcess, scriptFile.getAbsolutePath(), true));
 					}
 				} catch(IllegalThreadStateException ex){
-					//no output necessary, ProcessWrappers and respective listeners should take care of that.
+					// no output necessary, ProcessWrappers and respective listeners should take care of that.
 				}
 				if(deleteBatchFilesAfterStart){
-					//registering launch batch file for deletion
+					// registering launch batch file for deletion
 					wrapper.registerScriptFileToBeDeletedAfterProcessTermination(scriptFile);
 				}
 			} catch (IOException e) {
-				//Some drama occurred. Most likely space issues or device failure
+				// Some drama occurred. Most likely space issues or device failure
 				e.printStackTrace();
 				System.err.println(getCurrentTimeString(true) + ": Problems launching process. Check for available harddrive space!");
 			}
 			
-			//increase launch counter
+			// Increase launch counter
 			launchCt++;
 			
-			//check for number of permissible running processes before starting further ones within this launcher (if there are further to be launched)
+			// Check for number of permissible running processes before starting further ones within this launcher (if there are further to be launched)
 			if(maxNumberOfRunningLaunchedProcesses != -1){
 				while((serviceHandler.getNumberOfRunningProcesses() >= maxNumberOfRunningLaunchedProcesses) 
 						&& (listOfClassesActuallyLaunched.size() - launchCt) > 0){
@@ -1383,7 +1385,7 @@ public class ParallelLauncher extends Launcher {
 		/**
 		 * Clean up-related activities once all processes have been started
 		 */
-		//eventually write temporary Jar files into delete log once started, so they can be safely deleted by the next launcher
+		// Eventually write temporary Jar files into delete log once started, so they can be safely deleted by the next launcher
 		if(!jarNameMapper.isEmpty()){
 			try {
 				FileUtils.writeLines(new File(CLEANUP_LOG_FILE), jarNameMapper.values(), true);
@@ -1392,7 +1394,7 @@ public class ParallelLauncher extends Launcher {
 				e.printStackTrace();
 			}
 		}
-		//final output indicating that launcher is done - all necessary operations (spawning of child processes, writing log information) has finished
+		// Final output indicating that launcher is done - all necessary operations (spawning of child processes, writing log information) has finished
 		System.out.println(getCurrentTimeString(true) + ": All parallel processes have been spawned. For information on their runtime status, please check their respective consoles.");
 		
 		/*
@@ -1530,7 +1532,7 @@ public class ParallelLauncher extends Launcher {
     		.append(System.getProperty("line.separator"));
     	if(checkForKnownProcessAsWmiFailureBackupCheck){
     		configOutput.append("Check for reference process activated (to detect OS process manager failure): ").append(checkForKnownProcessAsWmiFailureBackupCheck);
-    		configOutput.append(", Reference process: ").append(knownRunningProcessName);
+    		configOutput.append(", Reference process: ").append(knownRunningProcessNames);
     	} else {
     		configOutput.append("Check for reference process (to detect OS process manager failure) deactivated.");
     	}
