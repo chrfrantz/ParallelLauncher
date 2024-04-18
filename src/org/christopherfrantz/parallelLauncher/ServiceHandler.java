@@ -42,10 +42,10 @@ public final class ServiceHandler implements ProcessStatusListener {
 	@Override
 	public void executeDuringProcessLaunch(ProcessWrapper wrapper) {
 		if(startTime == -1){
-			//save only timing of first launched process
+			// Save only timing of first launched process
 			startTime = System.currentTimeMillis();
 			if(ParallelLauncher.adaptQueueCheckTimingDynamically){
-				//save start time of first process to file
+				// Save start time of first process to file
 				ParallelLauncher.updateStartTimeConfiguration(startTime);
 				if(ParallelLauncher.debug){
 					System.out.println("QueueTimingOptimizer: Wrote start time of this process to runtime config. Start time: " + startTime);
@@ -63,26 +63,26 @@ public final class ServiceHandler implements ProcessStatusListener {
 			deviatingExitCode = wrapper.getExitCode();
 		}
 		System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": Process '" + wrapper.getName() + "' finished (Return code: " + wrapper.getExitCode() + ").");
-		//if same number of processes started as ended
+		// If same number of processes started as ended
 		if(startCounter == endCounter 
 				/* AND no outstanding process starts 
 					(as launcher may be waiting for some of its processes to finish
 					 before starting the remaining ones) */
 				&& startCounter == ParallelLauncher.getNumberOfClassesToBeLaunched()){
 			if(ParallelLauncher.adaptQueueCheckTimingDynamically){
-				//if all processes have ended, write execution duration to file
+				// If all processes have ended, write execution duration to file
 				writeExecutionDurationToRuntimeConfig();
 			}
-			//In any case, attempt to clean up old JAR files.
+			// In any case, attempt to clean up old JAR files.
 			ParallelLauncher.cleanUpTemporaryJarFiles();
 			
-			//Print runtime
+			// Print runtime
 			Date date = new Date(System.currentTimeMillis() - startTime);
 			DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
 			String dateFormatted = formatter.format(date);
 			System.out.println("ParallelLauncher Runtime: " + dateFormatted);
 			
-			//Then wait a bit, ... -- not elegant!
+			// Then wait a bit, ... -- not elegant!
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {

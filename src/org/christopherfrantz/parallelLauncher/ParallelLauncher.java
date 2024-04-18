@@ -739,14 +739,19 @@ public class ParallelLauncher extends Launcher {
 	
 	/**
 	 * Process name(s) (executable) of continuously running process(es) when running ParallelLauncher.
-	 * Used to ensure that Windows Management Instrumentation (WMI) is working properly. Used in conjunction with
-	 * checkForKnownProcessAsWmiFailureBackupCheck.
-	 * Good values could be the IDE you are using (e.g. "eclipse.exe") or generic OS services (e.g., "explorer.exe" on Windows).
-	 * Also supports partial names (e.g., "intellij"). Note that services should be OS-dependent. Check TaskManager for processes.
-	 * The evaluation would require the presence of at least one of the processes to continue execution.
+	 * Those are used to ensure that the OS process querying (e.g., Windows Management Instrumentation (WMI)) works
+	 * properly. Used in by {@link #checkForKnownProcessAsWmiFailureBackupCheck}.
+	 * Good values could be the IDE you are using (e.g. "eclipse.exe") or generic OS services (e.g., "explorer.exe"
+	 * on Windows, "gnome-shell" on Linux).
+	 * Also supports partial names (e.g., "intellij"). Note that services should be OS-dependent. Check the
+	 * corresponding task manager for processes.
+	 * The evaluation requires the presence of at least one of the listed processes to continue execution.
 	 */
-	protected static ArrayList<String> knownRunningProcessNames = ProcessReader.runsOnWindows() ? new ArrayList<>(Arrays.asList("explorer.exe")):
-		(ProcessReader.runsOnLinux() ? new ArrayList<>(Arrays.asList("equinox.launcher", "intellij")) : new ArrayList<>());
+	protected static ArrayList<String> knownRunningProcessNames = ProcessReader.runsOnWindows() ?
+			new ArrayList<>(Arrays.asList("explorer.exe")):
+			(ProcessReader.runsOnLinux() ?
+					new ArrayList<>(Arrays.asList("gnome-shell", "equinox.launcher", "intellij")) :
+					new ArrayList<>());
   	
 	/**
 	 * Indicates if batch files for creation of JARs are deleted after 
@@ -803,7 +808,7 @@ public class ParallelLauncher extends Launcher {
      * If set to true, ParallelLauncher launches a separate GUI frame showing output and 
      * capturing input instead of showing it on the regular console (Setting: false). 
      * If ParallelLauncher is started from MetaLauncher, a separate Monitor GUI is always 
-     * launched. (Default: false)
+     * launched. Default: false
      */
     protected static boolean launchInputOutputMonitor = false;
     
@@ -817,7 +822,7 @@ public class ParallelLauncher extends Launcher {
      * launched classes (set via {@link #setArgumentsToBePassedToLaunchedClasses(String[])}) 
      * as identifier for the Process Monitor GUI title (along with launcher simple class name), 
      * in addition to iteration counter passed down from MetaLauncher.
-     * (Default: true)
+     * Default: true
      */
     protected static boolean useArgumentsToBePassedToInstancesAsMonitorGuiIdentifier = true;
     
@@ -836,9 +841,9 @@ public class ParallelLauncher extends Launcher {
 		loadConfigEntryHandler();
 		
 		if(args.length == 2 || args.length == 3){
-			//meta launcher IPC filename
+			// Meta launcher IPC filename
 			metaLauncherIpcFile = args[0];
-			//launch iteration (if multiple launchers of this type launched) - used for MonitorGui
+			// Launch iteration (if multiple launchers of this type are launched) - used for MonitorGui
 			launchedLauncherIteration = args[1];
 			if(debug){
 				System.out.println(PREFIX + "Specified MetaLauncher with IPC file " 
@@ -853,15 +858,15 @@ public class ParallelLauncher extends Launcher {
 			if(args.length != 0){
 				System.err.println(PREFIX + "Invalid number of arguments passed to ParallelLauncher. Ignored those, continuing launch ...");
 			}
-			//remember that this instance has been started without MetaLauncher - important if ignoring config file is activated
+			// Remember that this instance has been started without MetaLauncher - important if ignoring config file is activated
 			launcherStartedWithoutMetaLauncher = true;
 		}
-		//launch MonitorGui if either requested or started via MetaLauncher - given that a graphics environment is available
+		// Launch MonitorGui if either requested or started via MetaLauncher - given that a graphics environment is available
 		if((args.length == 2 || args.length == 3 || launchInputOutputMonitor) && !GraphicsEnvironment.isHeadless()){
 			new ProcessMonitorGui(launcherClass.getSimpleName()
-					//append counter to Process Monitor Gui title if launched from MetaLauncher
+					// Append counter to Process Monitor Gui title if launched from MetaLauncher
 					+ (launchedLauncherIteration != null ? " " + launchedLauncherIteration : "")
-					//append passed arguments to Process Monitor Gui title (if activated and not null)
+					// Append passed arguments to Process Monitor Gui title (if activated and not null)
 					+ ((useArgumentsToBePassedToInstancesAsMonitorGuiIdentifier  
 							&& argumentsToBePassedToLaunchedClasses != null 
 							&& argumentsToBePassedToLaunchedClasses.length > 0) ? 
@@ -875,12 +880,12 @@ public class ParallelLauncher extends Launcher {
 		}
 		
 		
-		//Check for valid number of cores to be run in parallel
+		// Check for valid number of cores to be run in parallel
 		if(maxNumberOfActiveParallelLaunchers < 1){
 			throw new RuntimeException(PREFIX + "Maximum number for ParallelLaunchers to be active in parallel is invalid: " + maxNumberOfActiveParallelLaunchers);
 		}
 		
-		/**
+		/*
 		 * Register global service handler. 
 		 * It is a listener implementation that monitors the processes 
 		 * lifetimes and enables adaptive queue timing optimisation (if activated)
@@ -891,31 +896,31 @@ public class ParallelLauncher extends Launcher {
 		ServiceHandler serviceHandler = new ServiceHandler();
 		setGlobalProcessStatusListener(serviceHandler);
 		
-		/**
+		/*
 		 * Delays the startup of subsequent processes to ensure initializing batch files has been executed completely to avoid
 		 * premature deletion. Recommended! This is particularly an issue for more memory-intensive applications or 
 		 * applications that require a long time for initialization for any other reason.
 		 */
 		final boolean delay = true;
-		/**
+		/*
 		 * Frequency of checking whether child processes of previous launcher are running.
 		 */
 		final int processCheckFrequencyForOtherLaunchersRunningProcesses = (queueCheckFrequency == null ? (60000 * 3) : queueCheckFrequency);
-		/**
+		/*
 		 * Frequency of checking status of preceding launcher in queue - 
-		 * significantly less frequent as quite some WMI interaction involved.
+		 * should occur significantly less frequent as quite some WMI interaction involved.
 		 */
-		final int launcherCheckFrequency = (queueCheckFrequency == null ? (60000 * 5) : queueCheckFrequency);
+		final int launcherCheckFrequency = (queueCheckFrequency == null ? (60000 * 4) : queueCheckFrequency);
 		
-		/**
+		/*
 		 * Checks if all dependencies are available.
 		 */
 		checkForDependencies();
 		
-		/**
+		/*
 		 * Checks for processor affinity support
 		 */
-		//check for existence of psexec.exe if limited processors are activated (including simple checks on processor specification
+		// Check for existence of psexec.exe if limited processors are activated (including simple checks on processor specification
 		if(runOnLimitedProcessors){
 			if(ProcessReader.runsOnWindows() && Runtime.getRuntime().availableProcessors() > 1){
 				if(!ProcessReader.runsWindowsVistaAndHigher()){
@@ -942,7 +947,7 @@ public class ParallelLauncher extends Launcher {
 			} else if (ProcessReader.runsOnLinux()){
 				// Deactivate process affinity support on Linux
 				System.out.println(PREFIX + "Processor affinity support deactivated on Linux.");
-				//TODO: Introduce affinity for Linux
+				// TODO: Introduce affinity for Linux
 				runOnLimitedProcessors = false;
 			} else {
 				// Deactivate process affinity support if only one processor
@@ -958,7 +963,7 @@ public class ParallelLauncher extends Launcher {
 		// Opens console window (non-self-closing on Windows 7 (Vista?)) on all systems
 		final boolean openConsoleWindow = false;
 		
-		/**
+		/*
 		 * Basic validation of classes to be launched in parallel
 		 */
 		
@@ -1005,36 +1010,36 @@ public class ParallelLauncher extends Launcher {
 		// Print current configuration to console - passing information for actual launcher check frequency, and status of child processes of previous launcher
 		printCurrentConfiguration(launcherCheckFrequency, processCheckFrequencyForOtherLaunchersRunningProcesses);
 		
-		/**
+		/*
 		 * Creation of temporary JARs
 		 */
 		// Check if the launcher is supposed to build JAR files from class files to prevent side effects.
 		if(createTemporaryJarFilesForQueueing && !launcherClass.equals(BlockingParallelLauncher.class)){
 			if(createTemporaryClasspathVariable){
-				//local-variable version (set CLASSPATH=%CLASSPATH%;newJarFile.jar)
+				// local-variable version (set CLASSPATH=%CLASSPATH%;newJarFile.jar)
 				classpath = createJARifiedClasspath(classpath, unifiedJarFilename, true);
 			} else {
-				//parameter line version (-classpath <classpath>)
+				// parameter line version (-classpath <classpath>)
 				classpath = createJARifiedClasspath(classpath, unifiedJarFilename, false);
 			}
 		}
 	
-		// build command (incl. classpath) but without launched class specification - note the different quotation marks to capture space issues
+		// Build command (incl. classpath) but without launched class specification - note the different quotation marks to capture space issues
 		// see http://stackoverflow.com/questions/12891383/correct-quoting-for-cmd-exe-for-multiple-arguments for details on cmd /C syntax
 		// CF: 20131026 - Deactivated differentiated quoting as single-quoting seems best...
 		boolean simpleQuotes = true;//(jdkBinPath == null);
-		//use doublequotes if explicit JDK path (which potentially has white spaces in it) is required
+		// Use doublequotes if explicit JDK path (which potentially has white spaces in it) is required
 		String javaExeCommand = (simpleQuotes ? "java" : "\"\"" + buildJdkBinDirectoryString() + "java\"\"");
 		final String command = javaExeCommand 
-				//classpath as parameter instead of local variable?
+				// Is classpath passed as parameter instead of local variable?
 				+ (!createTemporaryClasspathVariable ? " -classpath " + (simpleQuotes ? "\"": "\"\"") + classpath + (simpleQuotes ? "\"": "\"\"") : "") 
 				+ " ";
 		
-		/**
+		/*
 		 * All preparation done. Now the queue checks start.
 		 */
 		
-		/**
+		/*
 		 * 1st Step - waiting for other preceding launchers. If more than one launcher allowed in parallel
 		 * 		      and queue position permits inclusion, progress to process check. 
 		 */
@@ -1100,8 +1105,8 @@ public class ParallelLauncher extends Launcher {
 			// Check again after waiting
 			launchersQueuedBeforeMe = myTurnInRunning();
 			/*
-			 * check for WMI registration (if not happened before) - 
-			 * once VALID WMI status has been received (i.e. not -1), write to IPC file - and never again after that
+			 * Check for WMI registration (if not happened before) -
+			 * Once VALID WMI status has been received (i.e. not -1), write to IPC file - and never again after that
 			 */
 			if(!validOSProcessExecutionFeedback){
 				// Test again and update status
@@ -1115,8 +1120,8 @@ public class ParallelLauncher extends Launcher {
 					+ launchersQueuedBeforeMe + ", max. allowed: " + maxNumberOfActiveParallelLaunchers);
 		}
 		
-		/**
-		 * 2nd Step - waiting for child processes of previous launcher to finish before starting own ones,
+		/*
+		 * 2nd Step - Wait for child processes of previous launcher to finish before starting own ones,
 		 * 			  or check if enough slots for further child processes before starting second launcher
 		 */
 		if(debug){
@@ -1139,18 +1144,18 @@ public class ParallelLauncher extends Launcher {
 		}
 		
 		while(	/*
-					checks for number of running processes (if multiple launchers allowed);
+					Checks for number of running processes (if multiple launchers allowed);
 					also checking for known process name (such as eclipse.exe) as running process if check is activated, 
 					just to be sure WMI (if running Windows) is doing its job (implying that the actual process needs to be running!)
 				*/
 				(
-					// if more than one launcher allowed,
+					// If more than one launcher allowed,
 						(maxNumberOfActiveParallelLaunchers > 1 && maxNumberOfRunningLaunchedProcesses != -1
-						//check if enough 'space' for parallel processes before launching
+						// check if enough 'space' for parallel processes before launching
 						&& (runningProcessesRunningJavaClasses.size() + classesToBeLaunched.size()) > maxNumberOfRunningLaunchedProcesses)
 					// or, if only one launcher allowed,
 					|| (maxNumberOfActiveParallelLaunchers == 1
-						//ensure that no further running classes before starting
+						// ensure that no further running classes before starting
 						&& !runningProcessesRunningJavaClasses.isEmpty())
 				)
 				// and check if known process is found (if check is activated) - SHOULD be found if activated
@@ -1209,7 +1214,7 @@ public class ParallelLauncher extends Launcher {
 			}
 			
 			System.out.println(getCurrentTimeString(true) + ": Waiting before performing recheck. Next check in " + (progressiveCheckDelay / 1000) + " seconds. (" + reason + ")");
-			// pressing enter will abort timeout and recheck immediately
+			// Pressing enter will abort timeout and recheck immediately
 			int res = awaitUserInput(progressiveCheckDelay, "recheck immediately", "debug", "toggle debug mode and recheck immediately");
 			if(res == 2){
 				toggleDebugMode();
@@ -1234,7 +1239,7 @@ public class ParallelLauncher extends Launcher {
 		cleanUpTemporaryJarFiles();
 				
 		
-		/**
+		/*
 		 * Preparing processor affinity-related command line prefixes
 		 * 
 		 * Information on processor affinity:
@@ -1250,7 +1255,7 @@ public class ParallelLauncher extends Launcher {
 																		(startBatchProcessesMinimized ? "/MIN " : "") + 
 																		"/WAIT /AFFINITY " + processorsToRunOnAffinityMask + " ";
 		
-		/**
+		/*
 		 * Starting parallel processes
 		 */
 		
@@ -1382,7 +1387,7 @@ public class ParallelLauncher extends Launcher {
 			}
 		}
 		
-		/**
+		/*
 		 * Clean up-related activities once all processes have been started
 		 */
 		// Eventually write temporary Jar files into delete log once started, so they can be safely deleted by the next launcher
@@ -1520,12 +1525,12 @@ public class ParallelLauncher extends Launcher {
     							.append(")"));
     	}
     	configOutput.append(System.getProperty("line.separator"));
-    	//Simulation-specific stuff
+    	// Simulation-specific stuff
     	configOutput.append("Arguments passed to launched processes (Count: ")
     		.append(argumentsToBePassedToLaunchedClasses == null ? 0 : argumentsToBePassedToLaunchedClasses.length)
     		.append("): ").append(expandArgumentsIntoCmdLineString())
     		.append(System.getProperty("line.separator"));
-    	//Queue checking and WMI stuff
+    	// Queue checking and WMI stuff
     	configOutput.append("Process queue check delay (progression base value): ").append(integers[0]).append(System.getProperty("line.separator"));
     	configOutput.append("Process termination check delay for processes launched by previous launcher: ").append(integers[1]).append(System.getProperty("line.separator"));
     	configOutput.append("Process termination check delay for processes launched by same launcher: ").append(processCheckFrequencyForProcessesStartedByLauncher)
@@ -1706,7 +1711,7 @@ public class ParallelLauncher extends Launcher {
 	 * @param openConsoleWindowIfNotUsingWindowsVistaAndHigher Indicates whether external console should be used for older Windows version
 	 * @param processorAffinityPrefixWindowsVistaAndHigher Native processor affinity prefix
 	 * @param processorAffinityPrefix Processor affinity prefix for use with external tools
-	 * @return
+	 * @return Launch script file reference
 	 */
 	private static File runLaunchScriptGeneration(Class classToBeLaunched, String classpath, String javaCommand, boolean openSeparateConsoleWindow, boolean openConsoleWindowIfNotUsingWindowsVistaAndHigher, String processorAffinityPrefixWindowsVistaAndHigher, String processorAffinityPrefix) {
 		if (ProcessReader.runsOnWindows()) {
@@ -1738,7 +1743,7 @@ public class ParallelLauncher extends Launcher {
 					+ simpleFormat.format(getCurrentTime()) + "_" + classToBeLaunched.getSimpleName() + "_Console";
 		}
 		
-		//Generate final command to be executed in order to instantiate class
+		// Generate final command to be executed in order to instantiate class
 		String cmd =
 			// Prepare batch file (Batch file necessary because of long classpath)
 			// Save classpath variable
@@ -1747,22 +1752,22 @@ public class ParallelLauncher extends Launcher {
 			//process affinity stuff TODO: Not supported yet
 			//+ (runOnLimitedProcessors ? processorAffinityPrefix : defaultStartCmd)
 			
-			//actual Java command containing eventual jdkBinPath and java command inclusive classpath and launched class
+			// Actual Java command containing eventual jdkBinPath and java command inclusive classpath and launched class
 			+ javaCommand + 
 				" " +
 				"-cp " + (jdkBinPath == null ? ("./bin" + CLASSPATH_SEPARATOR + "\"${CLASSPATH}\"") : "") +
 				" " +
 				WrapperExecutable.class.getCanonicalName()
-			//add redirection parameters (redirect type, outfile, identifier, executable class name)
-				//type of redirection (as specified by constants in WrapperExecutable
+			// Add redirection parameters (redirect type, outfile, identifier, executable class name)
+				// Type of redirection (as specified by constants in WrapperExecutable
 			+ " " + (redirectStdOutAndStdErrForLaunchedProcesses ? WrapperExecutable.REDIRECT_BOTH : (redirectStdErrForLaunchedProcesses ? WrapperExecutable.REDIRECT_STDERR : WrapperExecutable.REDIRECT_NONE))
-				//redirection outfile name
+				// Redirection outfile name
 			+ " " + redirectOutFilename
-				//unique identifier for launched process (based on batch file name)
+				// Unique identifier for launched process (based on batch file name)
 			+ " " + scriptFile.getName().substring(0, scriptFile.getName().indexOf(LAUNCH_SCRIPT_FILE_ENDING))
-				//FQDN of class to be launched
+				// FQDN of class to be launched
 			+ " " + classToBeLaunched.getCanonicalName()
-		    //append eventual arguments - future checks: arguments with space in between - not sure what happens
+		    // Append eventual arguments - future checks: arguments with space in between - not sure what happens
 			+ (argumentsToBePassedToLaunchedClasses != null && argumentsToBePassedToLaunchedClasses.length != 0 ? " " + expandArgumentsIntoCmdLineString() : "")	
 			;
 			
@@ -1789,12 +1794,12 @@ public class ParallelLauncher extends Launcher {
 	}
 	
 	private static File runLaunchScriptWindows(Class classToBeLaunched, String classpath, String javaCommand, boolean openSeparateConsoleWindow, boolean openConsoleWindowIfNotUsingWindowsVistaAndHigher, String processorAffinityPrefixWindowsVistaAndHigher, String processorAffinityPrefix) {
-		//generate unique batch file name for launch
+		// Generate unique batch file name for launch
 		File scriptFile = new File(System.nanoTime() + LAUNCH_SCRIPT_FILE_ENDING);
-		//default start command used if no affinity support applies
+		// Default start command used if no affinity support applies
 		String defaultStartCmd = "start /WAIT ";
 		
-		//generate stdout/stderr redirection outfile - or leave it as null if no redirection activated
+		// Generate stdout/stderr redirection outfile - or leave it as null if no redirection activated
 		String redirectOutFilename = null;
 		if(redirectStdErrForLaunchedProcesses || redirectStdOutAndStdErrForLaunchedProcesses){
 			SimpleDateFormat simpleFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
@@ -1802,32 +1807,32 @@ public class ParallelLauncher extends Launcher {
 					+ simpleFormat.format(getCurrentTime()) + "_" + classToBeLaunched.getSimpleName() + "_Console";
 		}
 		
-		//Generate final command to be executed in order to instantiate class
+		// Generate final command to be executed in order to instantiate class
 		String cmd =
-			//Prepare batch file (Batch file necessary because of long classpath)
-			//local variable version required definition of local environment (as opposed to vs. parameter version)
+			// Prepare batch file (Batch file necessary because of long classpath)
+			// local variable version required definition of local environment (as opposed to vs. parameter version)
 			(createTemporaryClasspathVariable ? "setlocal" + System.getProperty("line.separator") + classpath : "")
-			//is Java run in batch file directly, or launching a separate command line
+			// is Java run in batch file directly, or launching a separate command line
 			+ (runJavaClassInBatchFile ? "" : 
 				(openSeparateConsoleWindow || (openConsoleWindowIfNotUsingWindowsVistaAndHigher && !ProcessReader.runsWindowsVistaAndHigher()) ? "cmd /c " : ""))//"start /WAIT "))
-			//process affinity stuff
+			// Process affinity aspects
 			+ (runOnLimitedProcessors ? 
-					//prepares affinity for Windows Vista and higher
+					// Prepares affinity for Windows Vista and higher
 					(ProcessReader.runsWindowsVistaAndHigher() ? (validAffinityMaskSpecification() ? processorAffinityPrefixWindowsVistaAndHigher : defaultStartCmd) : 
-					//prepares prefix for psexec (Windows XP and others)
+					// Prepares prefix for psexec (Windows XP and others)
 					(validCoreSpecificationForPsExec() ? processorAffinityPrefix : defaultStartCmd)) : defaultStartCmd)
-			//actual Java command containing eventual jdkBinPath and java command inclusive classpath and launched class
+			// Actual Java command containing eventual jdkBinPath and java command inclusive classpath and launched class
 			+ javaCommand + " " + WrapperExecutable.class.getCanonicalName()
-			//add redirection parameters (redirect type, outfile, identifier, executable class name)
-				//type of redirection (as specified by constants in WrapperExecutable
+			// Add redirection parameters (redirect type, outfile, identifier, executable class name)
+				// Type of redirection (as specified by constants in WrapperExecutable
 			+ " " + (redirectStdOutAndStdErrForLaunchedProcesses ? WrapperExecutable.REDIRECT_BOTH : (redirectStdErrForLaunchedProcesses ? WrapperExecutable.REDIRECT_STDERR : WrapperExecutable.REDIRECT_NONE))
-				//redirection outfile name
+				// Redirection outfile name
 			+ " " + redirectOutFilename
-				//unique identifier for launched process (based on batch file name)
+				// Unique identifier for launched process (based on batch file name)
 			+ " " + scriptFile.getName().substring(0, scriptFile.getName().indexOf(LAUNCH_SCRIPT_FILE_ENDING))
-				//FQDN of class to be launched
+				// FQDN of class to be launched
 			+ " " + classToBeLaunched.getCanonicalName()
-		    //append eventual arguments - future checks: arguments with space in between - not sure what happens
+		    // Append eventual arguments - future checks: arguments with space in between - not sure what happens
 			+ (argumentsToBePassedToLaunchedClasses != null && argumentsToBePassedToLaunchedClasses.length != 0 ? " " + expandArgumentsIntoCmdLineString() : "")	
 			
 			//in case of activated logging, save jar launch output for particular class into accordingly 
@@ -1842,10 +1847,10 @@ public class ParallelLauncher extends Launcher {
 			
 		try {
 			FileUtils.write(scriptFile, "@echo off" + System.getProperty("line.separator")
-											//add actual java command
+											// Add actual java command
 											+ cmd 
 											+ System.getProperty("line.separator") 
-											//return error level, so we can catch it
+											// Return error level, so we can catch it
 											//+ "echo Command terminated with error code %errorlevel%" + System.getProperty("line.separator") 
 											+ (keepWindowOpen ? "" : "exit %errorlevel%")
 											+ System.getProperty("line.separator"));
@@ -1873,14 +1878,14 @@ public class ParallelLauncher extends Launcher {
 	 * Jar file or any other related operation failed.
 	 */
 	private static String buildJarFromDirectory(String directory, String targetFilename){
-		//Source for command: http://viralpatel.net/blogs/create-jar-file-in-java-eclipse/
+		// Source for command: http://viralpatel.net/blogs/create-jar-file-in-java-eclipse/
 		
 		if(debug){
 			System.out.println(PREFIX + "Trying to build temporary JAR for " + directory + " using target filename: " + targetFilename);
 			System.out.println(PREFIX + "Command: " + buildJdkBinDirectoryString() + "jar cf " + targetFilename + " " + directory);
 		}
-		//test running jar executable before preparing batch file - easier to see if it will work
-		//debug to show error stream from testing execution of jar executable
+		// Test running jar executable before preparing batch file - easier to see if it will work
+		// Debug to show error stream from testing execution of jar executable
 		boolean jdkPathCorrect = testForCorrectJdkPath(false);
 		if(debug && !jdkPathCorrect){
 			System.err.println(PREFIX + "JDK not found (jar/jar.exe, java/java.exe). Prompting user to pick folder.");
@@ -1889,7 +1894,7 @@ public class ParallelLauncher extends Launcher {
 			if(debug){
 				System.err.println(PREFIX + "JDK not found (jar/jar.exe, java/java.exe). Prompting user to pick folder.");
 			}
-			//test as long as user is not pressing Cancel or the chooser fails for any other reason
+			// Test as long as user is not pressing Cancel or the chooser fails for any other reason
 			jdkPathCorrect = testForCorrectJdkPath(false);
 		}
 		
@@ -1897,7 +1902,7 @@ public class ParallelLauncher extends Launcher {
 			testForCorrectJdkPath(true);
 		} else {
 			if(writeUserSelectedJdkBinDirectoryToFile && jdkPathCorrect && jdkPathChosenByUser){
-				//write it to file to remember - overwrite existing file if present
+				// Write it to file to remember - overwrite existing file if present
 				ArrayList<String> entry = new ArrayList<>();
 				entry.add(buildJdkBinDirectoryString());
 				try {
@@ -1912,7 +1917,7 @@ public class ParallelLauncher extends Launcher {
 			}
 		}
 		
-		//create batch file with nano timestamp
+		// Create batch file with nano timestamp
 		File scriptFile = new File(System.nanoTime() + LAUNCH_SCRIPT_FILE_ENDING);
 		
 		ProcessBuilder pb = null;
@@ -1950,9 +1955,9 @@ public class ParallelLauncher extends Launcher {
 			throw new RuntimeException(PREFIX + "JAR generation failed: Could not detect supported operating system. Reported OS: " + System.getProperty("os.name"));
 		}
 
-		//pb cannot be null at this stage
+		// pb cannot be null at this stage
 		
-		//Run batch file to generate JAR
+		// Run batch file to generate JAR
 		Process proc = null;
 		try {
 			System.out.println(PREFIX + "Generating temporary JAR file " + targetFilename);
@@ -1977,7 +1982,7 @@ public class ParallelLauncher extends Launcher {
 			System.err.println(PREFIX + "Exception when waiting for JAR generation process to finish.");
 			e.printStackTrace();
 		}
-		//Delete batch file after JAR generation
+		// Delete batch file after JAR generation
 		if(deleteBatchFilesCreatingJarsAfterStart){
 			FileUtils.deleteQuietly(scriptFile);
 		}
@@ -2010,7 +2015,7 @@ public class ParallelLauncher extends Launcher {
 	private static boolean testForCorrectJdkPath(boolean showError){
 		final boolean testDebug = false;
 		
-		//read JDK path from file if existent
+		// Read JDK path from file if existent
 		File jdkBinFile = new File(JDK_BIN_PATH_FILE);
 		List<String> entries = null;
 		if(writeUserSelectedJdkBinDirectoryToFile && jdkBinFile.exists()){
@@ -2029,16 +2034,16 @@ public class ParallelLauncher extends Launcher {
 		ArrayList<String> testCommands = new ArrayList<String>();
 		testCommands.add(jarTestCommand);
 
-		//second version of command with appended bin directory (if jdkBinPath is not null)
+		// Second version of command with appended bin directory (if jdkBinPath is not null)
 		if(jdkBinPath != null){
-			//used for assignment if check successful
+			// used for assignment if check successful
 			String rawFormatOfBinFolder = jdkBinPath + FOLDER_SEPARATOR + "bin";
-			//used for testing
+			// used for testing
 			jarTestCommand = rawFormatOfBinFolder + FOLDER_SEPARATOR;
 			testCommands.add(jarTestCommand);
 		}
 		
-		//if jdk bin specification file was found, test entries as well
+		// If JDK bin specification file was found, test entries as well
 		if(entries != null && !entries.isEmpty()){
 			testCommands.addAll(entries);
 		}
@@ -2055,9 +2060,9 @@ public class ParallelLauncher extends Launcher {
 				if(testDebug){
 					printProcessOutput(proc, "jar", false);
 				}
-				//if we get to here, something must have been found
+				// If we get to here, something must have been found
 				if(!testCommands.get(i).isEmpty()){
-					//must either be on %PATH% or one of the user-specified ones from file
+					// must either be on %PATH% or one of the user-specified ones from file
 					jdkBinPath = testCommands.get(i);
 				}
 				if(jdkBinPath == null){
@@ -2068,7 +2073,7 @@ public class ParallelLauncher extends Launcher {
 				return true;
 			} catch (IOException e) {
 				if(showError){
-					//show only if requested - Application will stop after showing that!
+					// Show only if requested - Application will stop after showing that!
 					throw new RuntimeException(PREFIX + "Could not execute jar compilation." + System.getProperty("line.separator") 
 						+ "Check JDK path: " +
 						(jdkBinPath == null ? JAR_EXECUTABLE + " could not be found on PATH." 
@@ -2145,35 +2150,35 @@ public class ParallelLauncher extends Launcher {
 	 * @return JARified classpath either as parameter or local variable command line
 	 */
 	public static String createJARifiedClasspath(String classpath, String unifiedJarFilename, boolean createLocalClasspathVariableInsteadOfParameter){
-		//Solution for creation of local classpath inspired by http://unserializableone.blogspot.co.nz/2007/10/solution-to-classpath-too-long-aka.html
+		// Solution for creation of local classpath inspired by http://unserializableone.blogspot.co.nz/2007/10/solution-to-classpath-too-long-aka.html
 		
-		//copy non-jar files temp directory, memorize directory, adapt classpath entry
+		// Copy non-jar files temp directory, memorize directory, adapt classpath entry
 		StringTokenizer tok = new StringTokenizer(classpath, CLASSPATH_SEPARATOR);
-		//counter in case multiple JAR files need to be created for the same launcher (i.e. multiple folders with class files on classpath)
+		// Counter in case multiple JAR files need to be created for the same launcher (i.e. multiple folders with class files on classpath)
 		int dirCounter = 0;
 		
-		//buffer for rebuilding modified classpath
+		// Buffer for rebuilding modified classpath
 		StringBuffer newClassPath = new StringBuffer();
 		String tempJarFileName = null; 
 		while(tok.hasMoreElements()){
 			String token = tok.nextToken();
 			boolean processDirectoryAsJarFile = false;
 			if(!token.endsWith(JAR_FILE_ENDING)){
-				//check if containing class files
+				// Check if containing class files
 				File check = new File(token);
 				if(check.isDirectory()){
 					String[] ext = new String[1];
 					ext[0] = "class";
 					if(!FileUtils.listFiles(check, ext, true).isEmpty()){
-						//only process if containing .class files
+						// only process if containing .class files
 						processDirectoryAsJarFile = true;
 					}
 				}
 			}
 			if(processDirectoryAsJarFile){
-				//treat as directory and pack into jar
+				// Treat as directory and pack into jar
 				if(tempJarFileName == null){
-					//prepare subfolder
+					// Prepare subfolder
 					File subfolder = new File(System.getProperty("user.dir") + FOLDER_SEPARATOR + tempJarSubfolder);
 					if(!subfolder.exists()){
 						if(!subfolder.mkdirs()){
@@ -2184,24 +2189,24 @@ public class ParallelLauncher extends Launcher {
 							+ (unifiedJarFilename != null ? unifiedJarFilename : String.valueOf(System.nanoTime()));
 				}
 				String dynJarName = tempJarFileName + "_" + dirCounter + JAR_FILE_ENDING;
-				//increase counter in case of multiple Jars
+				// Increase counter in case of multiple Jars
 				dirCounter++;
 				if(unifiedJarFilename == null){
-					//if not given filename by MetaLauncher, save mapping from old classpath entry to newly generated jar - for later addition to deletion log as well as for debugging
+					// if not given filename by MetaLauncher, save mapping from old classpath entry to newly generated jar - for later addition to deletion log as well as for debugging
 					jarNameMapper.put(token, dynJarName);
 				}
 				
-				//check if classpath is empty
+				// Check if classpath is empty
 				boolean firstElementOnClassPath = newClassPath.length() == 0;
 				
-				//eventually generate JAR file if necessary
+				// Eventually generate JAR file if necessary
 				if(unifiedJarFilename == null || !new File(dynJarName).exists()){
 					if(unifiedJarFilename != null){
 						//if(debug){
 							System.out.println(PREFIX + "Generating unified JAR file " + dynJarName);
 						//}
 					}
-					//generate JAR if no unified JAR specified or if specified file does not exist
+					// Generate JAR if no unified JAR specified or if specified file does not exist
 					buildJarFromDirectory(token, dynJarName);
 				} else {
 					if(unifiedJarFilename != null){
@@ -2212,7 +2217,7 @@ public class ParallelLauncher extends Launcher {
 				}
 				
 				if(createLocalClasspathVariableInsteadOfParameter){
-					//LOCAL VARIABLE VERSION
+					// LOCAL VARIABLE VERSION
 					if (ProcessReader.runsOnLinux()) {
 						newClassPath.append("export CLASSPATH=");
 					} else {
@@ -2220,7 +2225,7 @@ public class ParallelLauncher extends Launcher {
 					}
 					newClassPath.append(dynJarName);
 					if(!firstElementOnClassPath){
-						//already existing classpath entries, so we need to append %CLASSPATH%
+						// Already existing classpath entries, so we need to append %CLASSPATH%
 						if (ProcessReader.runsOnLinux()) {
 							newClassPath.append(CLASSPATH_SEPARATOR + "${CLASSPATH}");
 						} else {
@@ -2229,13 +2234,13 @@ public class ParallelLauncher extends Launcher {
 						}
 					}
 				} else {
-					//PARAMETER VERSION
+					// PARAMETER VERSION
 					newClassPath.append(dynJarName);
 				}
 			} else {
 				boolean firstOnClassPath = newClassPath.length() == 0;
 				if(createLocalClasspathVariableInsteadOfParameter){
-					//LOCAL VARIABLE VERSION
+					// LOCAL VARIABLE VERSION
 					if (ProcessReader.runsOnLinux()) {
 						newClassPath.append("export CLASSPATH="); //TODO: Check for quotation marks CLASSPATH=\""
 					} else {
@@ -2247,8 +2252,9 @@ public class ParallelLauncher extends Launcher {
 						newClassPath.append(token);
 					}
 					if(!firstOnClassPath){
-						//already existing classpath entries, so we need to append %CLASSPATH%
+						// Already existing classpath entries, so we need to append %CLASSPATH%
 						if (ProcessReader.runsOnLinux()) {
+							// Linux
 							newClassPath.append(CLASSPATH_SEPARATOR + "${CLASSPATH}");
 						} else {
 							// Windows
@@ -2256,29 +2262,25 @@ public class ParallelLauncher extends Launcher {
 						}
 					}
 				} else {
-					//PARAMETER VERSION
+					// PARAMETER VERSION
 					newClassPath.append(token);
 				}
 			}
 			if(tok.hasMoreElements() && !createLocalClasspathVariableInsteadOfParameter){
-				//only append if not last element
+				// only append if not last element
 				newClassPath.append(CLASSPATH_SEPARATOR);
 			}
 			
-			// If final element and concatenated path specification, append "
-			/*if (createLocalClasspathVariableInsteadOfParameter && ProcessReader.runsOnLinux()) {
-				newClassPath.append("\""); // closing wrapping quotation marks
-			}*/
+			// Add linebreak if working with variables instead of command parameter
 			if(createLocalClasspathVariableInsteadOfParameter){
 				newClassPath.append(System.getProperty("line.separator"));
 			}
-			//System.out.println("Found element " + tok.nextToken());
 		}
 		
 		if(debug){
 			System.out.println(PREFIX + "Modified classpath: " + newClassPath);
 		}
-		//overwrite old classpath with newly generated one - but ensure that it is not empty just to be safe
+		// Overwrite old classpath with newly generated one - but ensure that it is not empty just to be safe
 		if(newClassPath.length() > 0){
 			classpath = newClassPath.toString();
 		}
@@ -2326,7 +2328,7 @@ public class ParallelLauncher extends Launcher {
 								+ (maxNumberOfActiveParallelLaunchers > 1 ? 
 										"." + System.getProperty("line.separator") 
 										+ "Previous launcher is possibly still running. Deletion attempt with be repeated by next launcher." : "."));
-						//keep file reference for later deletion
+						// Keep file reference for later deletion
 						remainingFiles.append(fileToDelete).append(System.getProperty("line.separator"));
 					}
 				} else {
@@ -2336,7 +2338,7 @@ public class ParallelLauncher extends Launcher {
 			scanner.close();
 			
 			if(remainingFiles.length() > 0){
-				//if there are remaining files, overwrite original file
+				// If there are remaining files, overwrite original file
 				try {
 					FileUtils.write(cleanupLog, remainingFiles, false);
 				} catch (IOException e) {
@@ -2344,7 +2346,7 @@ public class ParallelLauncher extends Launcher {
 					e.printStackTrace();
 				}
 			} else {
-				//if no failed deletes, simply delete the entire log file
+				// If no failed deletes, simply delete the entire log file
 				if(cleanupLog.delete()){
 					System.out.println(PREFIX + "Successfully cleared up old JAR files");
 				} else {
@@ -2453,9 +2455,7 @@ public class ParallelLauncher extends Launcher {
 			}
 		}
 	}
-	
-	
-        
+
     /** 
 	 * Predefined date format for time output 
 	 */

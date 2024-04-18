@@ -298,17 +298,17 @@ public abstract class Launcher {
 				System.err.println("Action options need to be specified as pairs of detected input and associated action description.");
 				return -1;
 			}
-			//construct console description and determine return values
+			// Construct console description and determine return values
 			for(int i = 0; i < specialInput.length / 2; i++) {
 				if(i == specialInput.length / 2 - 1) {
 					builder.append(" or ");
 				} else {
 					builder.append(", ");
 				}
-				//perform linebreak after each statement - better readability
+				// Perform linebreak after each statement - better readability
 				builder.append(System.getProperty("line.separator"));
 				builder.append("enter '").append(specialInput[i * 2]).append("' to ").append(specialInput[i * 2 + 1]);
-				//save special input and associate return value for later reference
+				// Save special input and associate return value for later reference
 				specialInputs.put(specialInput[i * 2], i + 2);
 			}
 		}
@@ -318,18 +318,18 @@ public abstract class Launcher {
 			BufferedReader br = new BufferedReader(
 				new InputStreamReader(System.in));
 			long totalSleeptime = 0;
-			//read console and check if user entered anything
+			// Read console and check if user entered anything
 			while(!br.ready() && totalSleeptime < maxWaitingTime){
 				totalSleeptime += 200;
 				Thread.sleep(200);
 			}
 			if(br.ready()){
 				String userInput = br.readLine();
-				//if so, start recheck immediately - overriding original sleep time
+				// If so, start recheck immediately - overriding original sleep time
 				if(debug){
 					System.out.println("Keyboard console input detected, performing action " + action + " immediately ...");
 				}
-				//user entered specialInput
+				// user-entered specialInput
 				for(Entry<String, Integer> entry: specialInputs.entrySet()) {
 					if(entry.getKey() != null && userInput.startsWith(entry.getKey())) {
 						returnValue = entry.getValue();
@@ -337,7 +337,7 @@ public abstract class Launcher {
 					}
 				}
 				if(returnValue == 0) {
-					//user just pressed enter, no special characters
+					// User just pressed enter, no special characters
 					returnValue = 1;
 				}
 			} else {
@@ -345,12 +345,11 @@ public abstract class Launcher {
 					System.out.println("Waiting timed out, doing recheck ...");
 				}
 			}
-			//br.close();
 		} catch (IOException e) {
-			//if console input makes problems
+			// If console input makes problems
 			e.printStackTrace();
 		} catch (InterruptedException e) {
-			//if thread sleep fails
+			// If thread sleep fails
 			e.printStackTrace();
 		}
 		return returnValue;
@@ -534,10 +533,10 @@ public abstract class Launcher {
 			};
 			addConfigEntryHandler(maxQueuedLaunchersByMetaLauncherHandler);
 			
-			// add machine header - checks whether it had been added before (e.g. via initializeMachineId())
+			// Add machine header - checks whether it had been added before (e.g. via initializeMachineId())
 			addConfigEntryHandler(machineIdEntryHandler);
 			
-			//ParallelLauncher configuration
+			// ParallelLauncher configuration
 			ConfigFileEntryHandler<Integer> maxActiveLaunchersHandler = new ConfigFileEntryHandler<Integer>(PARALLEL_LAUNCHER_RUNTIME_CONFIG_FILE,
                     MAX_PARALLEL_LAUNCHERS_KEY, ParallelLauncher.maxNumberOfActiveParallelLaunchers) {
 				
@@ -606,7 +605,7 @@ public abstract class Launcher {
 			addConfigEntryHandler(maxActiveProcessesHandler);
 		}
 		
-		//Adaptive queue timing stuff - not quite working yet
+		// Adaptive queue timing stuff - not quite working yet
 		if(ParallelLauncher.adaptQueueCheckTimingDynamically){
 			ConfigFileEntryHandler<Long> longestDurationHandler = new ConfigFileEntryHandler<Long>(PARALLEL_LAUNCHER_RUNTIME_CONFIG_FILE,
                     LAST_PROCESS_DURATION, ParallelLauncher.lastLaunchersLongestProcessDuration) {
@@ -732,17 +731,17 @@ public abstract class Launcher {
 					System.err.println(PREFIX + "Problems reading config file " + e.getMessage());
 				}
   				if(content != null) {
-  					//check per handler
+  					// Check per handler
 					for(int k = 0; k < configEntries.size(); k++) {
 						if(debug) {
 							System.out.println(PREFIX + "Reading from ConfigFileHandler " + configEntries.get(k));
 						}
 						boolean foundContent = false;
-	  					//check per line of content
+	  					// Check per line of content
 	  					for(int i = 0; i < content.size(); i++){
-  							//do handler-specific processing
+  							// do handler-specific processing
   							if(configEntries.get(k).readEntry(content.get(i))) {
-  								//if found somewhere in the config file
+  								// if found somewhere in the config file
   								foundContent = true;
   								if(debug) {
   	  								System.out.println(PREFIX + "Found entry in config file for " + configEntries.get(k));
@@ -758,38 +757,38 @@ public abstract class Launcher {
   					}
   				}
   			} else {
-  				//if no file, then no config
+  				// If no file, then no config
   				containsProcessConfiguration = false;
   			}
   				
 			//WRITING TO CONFIG
 			
-			//Write config file content if non-found related to config file
+			// Write config file content if non-found related to config file
 			if(ParallelLauncher.configFileCheckForLauncherConfiguration && !containsProcessConfiguration) {	
-				//if config file exists, get all content and append process-related stuff
+				// If config file exists, get all content and append process-related stuff
   				List<String> contents = new ArrayList<String>();
   				if(confFile.exists()) {
   					try {
-  						//if exists, get previous content (knowing that it does not contain process information)
+  						// If exists, get previous content (knowing that it does not contain process information)
 						contents = FileUtils.readLines(confFile);
 					} catch (IOException e) {
 						System.err.println(PREFIX + "Problems reading config file " + e.getMessage());
 					}
   				}
   				
-  				//now just add missing contents
+  				// Now just add missing contents
   				for(int k = 0; k < configEntries.size(); k++) {
-					//do handler-specific processing
+					// Do handler-specific processing
 					String entry = configEntries.get(k).constructEntry();
 					if(entry != null && !entry.isEmpty()) {
-						//actually write or update entry
+						// Actually write or update entry
 						System.out.println(PREFIX + "Writing configuration entry for " + configEntries.get(k).getKey() + 
 								" (Value: " + configEntries.get(k).getValue() + ") to config file '" + configFile + "'.");
 						contents = updateEntry(contents, configEntries.get(k).getKey(), entry);
 					}
 				}
   				
-  				//and write config file
+  				// and write config file
   				try {
 					FileUtils.writeLines(confFile, contents);
 					if(debug) {
@@ -799,7 +798,7 @@ public abstract class Launcher {
 					System.err.println(PREFIX + "Error when attempting to write config file " + e.getMessage());
 				}
   			}
-  		} //end of thread sync
+  		} // end of thread sync
 	}
 	
 	/**
@@ -816,10 +815,10 @@ public abstract class Launcher {
 	  			.append(value).toString();
 			if(configFile.exists()){
 				try {		
-					//if existing file, check for content and replace duration-related info
+					// If existing file, check for content and replace duration-related info
 					List<String> content = FileUtils.readLines(configFile);
 					content = updateEntry(content, key, updatedEntry);
-					//rewrite file but leave other entries untouched
+					// Rewrite file but leave other entries untouched
 					FileUtils.writeLines(configFile, content);
 				} catch (IOException e) {
 					System.err.println(PREFIX + "Error when attempting to write config file: " + e.getMessage());
@@ -851,7 +850,7 @@ public abstract class Launcher {
 				containedEntry = true;
 				break;
 			}
-			//Replace line if different values in entry line or non-existent
+			// Replace line if different values in entry line or non-existent
 			if(!containedEntry && content.get(i).startsWith(key)) {
 				content.remove(i);
 				content.add(i, entryLine);

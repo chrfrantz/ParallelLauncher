@@ -201,14 +201,14 @@ public class MetaLauncher extends Launcher {
 					System.out.println(PREFIX + "Removed process '" + wrapper.getName() + "' from list of running processes.");
 				}
 			}
-			//check for deletion of unified JAR file if activated
+			// Check for deletion of unified JAR file if activated
 			if(launchingFinished && createOneJarFileForAllLaunchers && runningProcesses.isEmpty()){
-				//if launching finished and all processes have finished, then delete JAR file
+				// If launching has finished and all processes have finished, then delete JAR file
 				File subfolder = new File(System.getProperty("user.dir") + FOLDER_SEPARATOR + ParallelLauncher.tempJarSubfolder);
 				if (debug) {
 					System.out.println(PREFIX + "Subfolder " + subfolder + " to be deleted.");
 				}
-				//search for all files starting with this prefix (and ending with .jar) and delete them
+				// Search for all files starting with this prefix (and ending with .jar) and delete them
 				ArrayList<File> unifiedJars = 
 						new ArrayList<File>(FileUtils.listFiles(subfolder, FileFilterUtils.prefixFileFilter(unifiedJarFile + "_"), null));
 				if(!unifiedJars.isEmpty()){
@@ -230,11 +230,11 @@ public class MetaLauncher extends Launcher {
 							": " + PREFIX + "Could not find unified JAR(s) to be deleted.");
 				}
 			}
-			//Notify all listeners once all processes have terminated
+			// Notify all listeners once all processes have terminated
 			if(launchingFinished && runningProcesses.isEmpty()){
 				notifyListeners();
 				
-				//Print runtime
+				// Print runtime
 				printDuration();
 			}
 		}
@@ -304,6 +304,7 @@ public class MetaLauncher extends Launcher {
 	public static ArrayList<Class> metaLauncherInstancesToConsiderWhenQueueing = new ArrayList<>();
 	
 	/**
+	 * Main entry point for MetaLauncher. The arguments are not used as part of the MetaLauncher.
 	 * @param args
 	 */
 	public static void main(String[] args) {
@@ -321,13 +322,13 @@ public class MetaLauncher extends Launcher {
 		}
 		
 		final long metaLauncherId = System.nanoTime();
-		//file used for IPC with this MetaLauncher
+		// File used for IPC with this MetaLauncher
 		final String ipcFileName = "MetaLauncher_IPC_" + metaLauncherId;
 		if(debug){
 			System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": MetaLauncher IPC file: " + ipcFileName);
 		}
 		ipcFile = new File(ipcFileName);
-		//delete file if existing
+		// Delete file if existing
 		deleteIpcFile();
 		
 		String separator = System.getProperty("file.separator");
@@ -335,21 +336,21 @@ public class MetaLauncher extends Launcher {
 		String path = System.getProperty("java.home")
 				+ separator + "bin" + separator + "java";
 		
-		//Generate name for unified JAR file if activated
+		// Generate name for unified JAR file if activated
 		if(createOneJarFileForAllLaunchers){
 			unifiedJarFile = String.valueOf(System.currentTimeMillis());
 				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": "+ PREFIX + "Using unified JAR file '" + unifiedJarFile + "' for all ParallelLaunchers.");
-			//JARify classpath to avoid side effects if sources are manipulated after initial launch
+			// JARify classpath to avoid side effects if sources are manipulated after initial launch
 			classpath = ParallelLauncher.createJARifiedClasspath(classpath, unifiedJarFile, false);
 			if(debug){
 				System.out.println(PREFIX + "Generated classpath: " + classpath);
 			}
 		}
 		
-		//Read configuration settings from config file - relevant for initial start parameter
+		// Read configuration settings from config file - relevant for initial start parameter
 		refreshRuntimeConfigFromConfigFiles(META_LAUNCHER_RUNTIME_CONFIG_FILE);
 		
-		//Check for position in queue before starting if activated
+		// Check for position in queue before starting if activated
 		if(queueMetaLauncherInstances){
 			int turn = myTurnInRunning(metaLauncherInstancesToConsiderWhenQueueing);
 			while(turn > maxNumberOfMetaLaunchersRunningAtOneTime - 1){
@@ -359,7 +360,7 @@ public class MetaLauncher extends Launcher {
 			}
 		}
 		
-		//Maintain a counter of actually launched instances by this MetaLauncher for the purpose of calculating stats.
+		// Maintain a counter of actually launched instances by this MetaLauncher for the purpose of calculating stats.
 		int launchedLauncherInstances = 0;
 		
 		for(final Entry<Class<? extends ParallelLauncher>, DynamicLauncherInstanceCounter> entry: launchersToBeLaunched.entrySet()){
@@ -368,9 +369,9 @@ public class MetaLauncher extends Launcher {
 			} else {
 				boolean dynamicLauncher = entry.getValue().remainingNumberOfInstancesToBeLaunched() != -1;
 				int start = !dynamicLauncher ? 0 : (entry.getValue().totalNumberOfInstancesToBeLaunched() - entry.getValue().remainingNumberOfInstancesToBeLaunched());  
-				//switch to allow overriding the maximum permissible number of queued launcher - used when release all using console command 'all'
+				// Switch to allow overriding the maximum permissible number of queued launcher - used when release all using console command 'all'
 				boolean overrideMaxQueuedLauncher = false;
-				//start number of ParallelLaunchers - but consider dynamic changes at runtime
+				// Start number of ParallelLaunchers - but consider dynamic changes at runtime
 				for(int i = start; i < entry.getValue().totalNumberOfInstancesToBeLaunched(); i++){
 					System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Launch number " + (i + 1) 
 							+ " (out of " + entry.getValue().totalNumberOfInstancesToBeLaunched() + ") for ParallelLauncher '" 
@@ -379,44 +380,44 @@ public class MetaLauncher extends Launcher {
 						(createOneJarFileForAllLaunchers ? 
 							new ProcessBuilder(path, "-cp", 
 								classpath, 
-								//launched launcher FQ class name
+								// Launched launcher fully-qualified (FQ) class name
 								entry.getKey().getName(), 
-								//IPC filename reference for interaction
+								// IPC filename reference for interaction
 								ipcFileName, 
-								//Iteration for that launcher type as reference (mostly for debug purposes)
+								// Iteration for that launcher type as reference (mostly for debug purposes)
 								String.valueOf(i + 1), 
-								//Name for unified JAR file (respective prefix if multiple JAR files)
+								// Name for unified JAR file (respective prefix if multiple JAR files)
 								unifiedJarFile) :	
 							new ProcessBuilder(path, "-cp", 
 								classpath, 
-								//launched launcher FQ class name
+								// Launched launcher fully-qualified (FQ) class name
 								entry.getKey().getName(), 
-								//IPC filename reference for interaction
+								// IPC filename reference for interaction
 								ipcFileName, 
-								//Iteration for that launcher type as reference (mostly for debug purposes)
+								// Iteration for that launcher type as reference (mostly for debug purposes)
 								String.valueOf(i + 1)));
 					//processBuilder.redirectErrorStream(true);
 					if(debug){
 						System.out.println(PREFIX + "About to start ParallelLauncher with command: " + processBuilder.command());
 					}
-					//generate name for process
+					// Generate name for process
 					String name = entry.getKey().getSimpleName() + " " + (i + 1);
 					ProcessWrapper process = null;
 					try {
 						process = new ProcessWrapper(name, processBuilder.start(), MetaLauncher.class);
 						
-						//wait for valid status code
+						// Wait for valid status code
 						awaitLaunchersSuccessfulStart(name, process);
 						
-						//delete IPC file, so a new launcher instance can create a new one
+						// Delete IPC file, so a new launcher instance can create a new one
 						deleteIpcFile();
 						
 						if(process != null && !process.isFinished()){
 							System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": MetaLauncher: Launcher '" + name + "' successfully launched. Observe status in its Monitor GUI; closing the GUI ends the process.");
-							//register with data structure that maintains reference to running ParallelLaunchers
+							// Register with data structure that maintains reference to running ParallelLaunchers
 							runningProcesses.add(process.getProcess());
 							process.registerListener(processStatusListener);
-							//consider this launch successful (and maintain stats-related information)
+							// Consider this launch successful (and maintain stats-related information)
 							launchedLauncherInstances++;
 						} else if(process.isFinished()){
 							System.err.println(ParallelLauncher.getCurrentTimeString(true) + ": MetaLauncher: Note: Launcher '" + name + "' has already finished execution (just after launching).");
@@ -427,32 +428,32 @@ public class MetaLauncher extends Launcher {
 					}
 					
 					if(!overrideMaxQueuedLauncher) {
-						//Read settings from config files
+						// Read settings from config files
 						refreshRuntimeConfigFromConfigFiles(META_LAUNCHER_RUNTIME_CONFIG_FILE);
 					}
 					
-					//adjust number of remaining instances to be launched
+					// Adjust number of remaining instances to be launched
 					if(dynamicLauncher) {
 						i = entry.getValue().totalNumberOfInstancesToBeLaunched() 
 								- entry.getValue().remainingNumberOfInstancesToBeLaunched();
-						//override automatic increment (used for non-dynamic launcher specifications)
+						// Override automatic increment (used for non-dynamic launcher specifications)
 						i--;
 					}
 									
-					//check if not too many ParallelLaunchers running
+					// Check if not too many ParallelLaunchers running
 					if(maxNumberOfQueuedOrRunningLaunchersAtOneTime > -1 && 
-							//and if further are to be started - if not, no point of blocking here
+							// and if further are to be started - if not, no point of blocking here
 							i < (entry.getValue().totalNumberOfInstancesToBeLaunched() - 1)){
 						if(maxNumberOfQueuedOrRunningLaunchersAtOneTime == 0){
 							System.err.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Value zero for max. number of running ParallelLaunchers is invalid. Deactivated functionality.");
 							maxNumberOfQueuedOrRunningLaunchersAtOneTime = -1;
 						}
-						//Wait for number of active ParallelLaunchers to drop, or user intervention
-						//Switch to release further ParallelLaunchers
+						// Wait for number of active ParallelLaunchers to drop, or user intervention
+						// Switch to release further ParallelLaunchers
 						boolean release = false;
-						//check if less than max processes running
+						// Check if less than max processes running
 						release = runningProcesses.size() < maxNumberOfQueuedOrRunningLaunchersAtOneTime;
-						//if not, do repeated checks
+						// If not, do repeated checks
 						while(!release){
 							System.out.println(ParallelLauncher.getCurrentTimeString(true) 
 									+ ": " + PREFIX + "Currently " + runningProcesses.size() + " active ParallelLaunchers. "
@@ -460,8 +461,8 @@ public class MetaLauncher extends Launcher {
 									+ " before starting further ones. Recheck in "
 									+ queueCheckFrequencyMetaLauncher + " ms.");
 							
-							//Shows CLI and waits for specified time or until user presses key. Assigns true to release additional
-							//launcher(s) if corresponding user action has been performed.
+							// Shows CLI and waits for specified time or until user presses key. Assigns true to release additional
+							// launcher(s) if corresponding user action has been performed.
 							switch (showCLI(queueCheckFrequencyMetaLauncher, entry.getValue(), dynamicLauncher, launchedLauncherInstances, "")) {
 								case 0:
 									// Don't release any launcher
@@ -483,15 +484,15 @@ public class MetaLauncher extends Launcher {
 							}
 							
 							if(!overrideMaxQueuedLauncher) {
-								//Update settings from config files
+								// Update settings from config files
 								refreshRuntimeConfigFromConfigFiles(META_LAUNCHER_RUNTIME_CONFIG_FILE);
 							}
-							//check if no user-caused release, check for condition-based release
+							// Check if no user-caused release, check for condition-based release
 							if(!release){
 								if(maxNumberOfQueuedOrRunningLaunchersAtOneTime > -1 
-									//keep rechecking as long as too many running processes/ParallelLaunchers
+									// Keep rechecking as long as too many running processes/ParallelLaunchers
 									&& runningProcesses.size() >= maxNumberOfQueuedOrRunningLaunchersAtOneTime) {
-										//do nothing
+										// do nothing
 								} else {
 									release = true;
 								}
@@ -572,7 +573,7 @@ public class MetaLauncher extends Launcher {
 				// Calculate average runtime
 				long runtimePerProcess = 0l;
 				if(terminationTimeOfLastProcess != 0l) {
-					//reduce launched instances by one, because only finished instances should be considered in stats calculation
+					// Reduce launched instances by one, because only finished instances should be considered in stats calculation
 					runtimePerProcess = new Float((terminationTimeOfLastProcess - startTime) / 
 							(float)(launchedLauncherInstances - 1)).longValue();
 					System.out.println(PREFIX + "Mean runtime per process: " + generateDuration(runtimePerProcess).getSimpleRepresentation());
@@ -630,7 +631,7 @@ public class MetaLauncher extends Launcher {
 		 */
 		if(launcherClass == null){
 			boolean successfulInference = false;
-			//try to infer launcherClass name
+			// Try to infer launcherClass name
 			try{
 				StackTraceElement launcherClassElement = 
 						(StackTraceElement)Thread.currentThread().getStackTrace()[Thread.currentThread().getStackTrace().length - 1];
@@ -647,10 +648,7 @@ public class MetaLauncher extends Launcher {
 				System.err.println(PREFIX + "Launcher class could not be inferred.");
 			}
 			if(!successfulInference){
-				throw new RuntimeException(PREFIX + "Please assign your launcher subclass (extends MetaLauncher) to the launcherClass field of MetaLauncher."); 
-					//+ System.getProperty("line.separator")
-					//+ "(see ParallelLauncher javadoc for example)). Trying to use ParallelLauncher as launcher class itself ...");
-				//launcherClass = MetaLauncher.class;
+				throw new RuntimeException(PREFIX + "Please assign your launcher subclass (extends MetaLauncher) to the launcherClass field of MetaLauncher.");
 			}
 		}
 	}
@@ -667,10 +665,10 @@ public class MetaLauncher extends Launcher {
 	 * @return
 	 */
 	private static Integer myTurnInRunning(ArrayList<Class> launcherClassesToConsider){
-		//get all creation times of this process and other specified processes
+		// Get all creation times of this process and other specified processes
 		ArrayList<String> output = new ArrayList<String>();
 		if(launcherClass == null){
-			//try to infer - throws RuntimeException if failing
+			// Try to infer - throws RuntimeException if failing
 			inferLauncherClassName();
 		}
 		if(!launcherClassesToConsider.contains(launcherClass)){
@@ -690,14 +688,14 @@ public class MetaLauncher extends Launcher {
 			}
 			return -1;
 		}
-		//order times ascending
+		// Order times ascending
 		Collections.sort(output);
-		//assume that my start is the most recent one and memorize that
+		// Assume that my start is the most recent one and memorize that
 		if(myStartTime == null){
-			//once set it is only used for comparison
+			// Once set it is only used for comparison
 			myStartTime = output.get(output.size() - 1);
 			System.out.println(PREFIX + "Assume my creation time as " + myStartTime);
-			//if one launcher running and creation of temporary JAR files deactivated, warn user about confounded setups
+			// If one launcher running and creation of temporary JAR files deactivated, warn user about confounded setups
 			/*if(output.size() == 1 && !createTemporaryJarFilesForQueueing){
 				System.err.println("=== Starting further launcher instances or working on source files should NOT be done" + System.getProperty("line.separator")
 						+ "if you are running ParallelLaunchers from an IDE that compiles source files automatically as it will affect all queued ParallelLaunchers." + System.getProperty("line.separator")
@@ -706,7 +704,7 @@ public class MetaLauncher extends Launcher {
 			System.out.println(PREFIX + "=== SUCCESS! You can now safely start further MetaLauncher instances. ===");
 			//}
 		}
-		//check for blocking launcher
+		// Check for blocking launcher
 		List<String> blockerRunning = processReader.getCreationTimesOfRunningInstances(BlockingParallelLauncher.class, null);
 		if(!blockerRunning.isEmpty()){
 			System.err.println(PREFIX + "Blocking Launcher is running. Will prevent me and any other (Meta)Launcher from starting (good for setup of large number of (Meta)Launchers).");
@@ -717,7 +715,7 @@ public class MetaLauncher extends Launcher {
 		}
 		if(output.get(0).equals(myStartTime)){
 			System.out.println(PREFIX + "First of " + output.size() + " queued MetaLauncher(s) - my turn next.");
-			//my turn, others are queued
+			// my turn, others are queued
 			return 0;
 		}
 		for(int i = 0; i < output.size(); i++){
@@ -746,11 +744,11 @@ public class MetaLauncher extends Launcher {
 			return;
 		}
 		while(testAgain){
-			//check if perhaps already terminated
+			// Check if perhaps already terminated
 			if(process.isFinished()){
 				return;
 			}
-			//wait until file is existing (or premature termination of process)
+			// Wait until file is existing (or premature termination of process)
 			while(!basicFileChecks(true)){
 				if(process.isFinished()){
 					return;
@@ -763,7 +761,7 @@ public class MetaLauncher extends Launcher {
 					e.printStackTrace();
 				}
 			}
-			//file exists, now check for valid entries
+			// File exists, now check for valid entries
 			List<String> content = null;
 			try {
 				content = FileUtils.readLines(ipcFile);
@@ -792,7 +790,7 @@ public class MetaLauncher extends Launcher {
 						}
 						if(status != -1){
 							testAgain = false;
-							//should have been started properly at this stage
+							// should have been started properly at this stage
 						} else {
 							System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Process '" + name + "' did not receive valid WMI response, need to wait and recheck before starting further ParallelLaunchers.");
 							try {
@@ -863,8 +861,8 @@ public class MetaLauncher extends Launcher {
 		if(existence){
 			return ipcFile.exists();
 		}
-		//return true if no existence check
+		// return true if no existence check
 		return true;
 	}
-
+	
 }
