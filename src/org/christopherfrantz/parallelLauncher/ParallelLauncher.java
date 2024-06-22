@@ -335,7 +335,7 @@ public class ParallelLauncher extends Launcher {
 	 * Frequency with which a launcher can check for its own running 
 	 * processes before starting further ones as constrained by {@link #maxNumberOfRunningLaunchedProcesses}.
 	 */
-	private static int processCheckFrequencyForProcessesStartedByLauncher = 15000;
+	private static int processCheckFrequencyForProcessesStartedByLauncher = 20000;
 	
 	/**
 	 * Sets the check frequency the launcher uses to recheck whether it can start further 
