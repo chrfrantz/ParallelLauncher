@@ -90,7 +90,7 @@ public class MetaLauncher extends Launcher {
 	/**
 	 * Optionally extended waiting time for startup of processes (in ms).
 	 */
-	protected static long defaultStartupWaitingTime = defaultWaitingTime * 1;
+	protected static long defaultStartupWaitingTime = defaultWaitingTime;
 	
 	/**
 	 * Indicates the maximum number of MetaLaunchers running (i.e. dispatching
@@ -111,9 +111,16 @@ public class MetaLauncher extends Launcher {
 	 * Waiting time (in milliseconds) between checks on running processes 
 	 * data structure in order to determine whether further ParallelLaunchers can
 	 * be started. Only used if 
-	 * {@link #maxNumberOfQueuedOrRunningLaunchersAtOneTime} != -1. Default: 120000
+	 * {@link #maxNumberOfQueuedOrRunningLaunchersAtOneTime} != -1. Default: 2 minutes (120000 ms)
 	 */
 	protected static long queueCheckFrequencyMetaLauncher = 120000;
+
+	/**
+	 * Maximum (i.e., longest) queue check frequency (in case of adaptive adjustment)
+	 * to ensure sufficiently frequent recheck in case of long-running instances.
+	 * Value: 10 minutes (600000 ms)
+	 */
+	protected static long maxQueueCheckFrequencyMetaLauncher = 600000;
 	
 	/**
 	 * Sets the frequency which MetaLauncher instances use to check their 
@@ -146,7 +153,7 @@ public class MetaLauncher extends Launcher {
 	
 	/**
 	 * Returns the queue checking frequency in milliseconds.
-	 * @return
+	 * @return Queue checking frequency in ms.
 	 */
 	protected static Long getQueueCheckingFrequency() {
 		return queueCheckFrequencyMetaLauncher;
@@ -178,7 +185,7 @@ public class MetaLauncher extends Launcher {
 	 * Timestamp at which the last terminated process (not the 'final' process!) finished.
 	 * Used to calculate stats.
 	 */
-	private static long terminationTimeOfLastProcess = 0l;
+	private static long terminationTimeOfLastProcess = 0L;
 	
 	/**
 	 * ProcessStatusListener used to keep track of actively running process instances.
@@ -210,7 +217,7 @@ public class MetaLauncher extends Launcher {
 				}
 				// Search for all files starting with this prefix (and ending with .jar) and delete them
 				ArrayList<File> unifiedJars = 
-						new ArrayList<File>(FileUtils.listFiles(subfolder, FileFilterUtils.prefixFileFilter(unifiedJarFile + "_"), null));
+						new ArrayList<>(FileUtils.listFiles(subfolder, FileFilterUtils.prefixFileFilter(unifiedJarFile + "_"), null));
 				if(!unifiedJars.isEmpty()){
 					System.out.println(ParallelLauncher.getCurrentTimeString(true) + 
 							": " + PREFIX + "Deleting unified JAR(s) after termination of all ParallelLaunchers: " + unifiedJars.toString());
@@ -263,12 +270,37 @@ public class MetaLauncher extends Launcher {
 	 * and effectively just awaits their termination.
 	 */
 	private static boolean launchingFinished = false;
+
+	/**
+	 * Indicates whether launching of instances is blocked hard - i.e., simply not launching until unblocked.
+	 */
+	private static boolean launchingBlocked = false;
+
+	/**
+	 * Blocks launch of instances upon instantiation of MetaLauncher.
+	 * Requires manual release in CLI.
+	 */
+	protected static void blockLaunchOfInstances() {
+		launchingBlocked = true;
+	}
+
+	/**
+	 * Unblocks launch of instances during instantiation of MetaLauncher (or at runtime).
+	 */
+	protected static void unblockLaunchOfInstances() {
+		launchingBlocked = false;
+	}
 	
 	/**
 	 * Collection of all registered MetaLauncherListeners
 	 */
-	private static ArrayList<MetaLauncherListener> listeners = new ArrayList<>();
-	
+	private static final ArrayList<MetaLauncherListener> listeners = new ArrayList<>();
+
+	/**
+	 * Maintain a counter of actually launched instances by this MetaLauncher for the purpose of calculating stats.
+	 */
+	private static int launchedLauncherInstancesCount = 0;
+
 	/**
 	 * Registers a listener for this MetaLauncher that is called upon termination of 
 	 * all scheduled ParallelLaunchers.
@@ -339,7 +371,8 @@ public class MetaLauncher extends Launcher {
 		// Generate name for unified JAR file if activated
 		if(createOneJarFileForAllLaunchers){
 			unifiedJarFile = String.valueOf(System.currentTimeMillis());
-				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": "+ PREFIX + "Using unified JAR file '" + unifiedJarFile + "' for all ParallelLaunchers.");
+				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": "+
+						PREFIX + "Using unified JAR file '" + unifiedJarFile + "' for all ParallelLaunchers.");
 			// JARify classpath to avoid side effects if sources are manipulated after initial launch
 			classpath = ParallelLauncher.createJARifiedClasspath(classpath, unifiedJarFile, false);
 			if(debug){
@@ -359,10 +392,17 @@ public class MetaLauncher extends Launcher {
 				turn = myTurnInRunning(metaLauncherInstancesToConsiderWhenQueueing);
 			}
 		}
-		
-		// Maintain a counter of actually launched instances by this MetaLauncher for the purpose of calculating stats.
-		int launchedLauncherInstances = 0;
-		
+
+		// MetaLauncher is properly registered - now checking for start of instances
+
+		// Block execution of any launched while still blocked (only relevant if MetaLauncher is started with #blockLaunchOfInstances()).
+		int releaseLaunchers = (launchingBlocked ? 0 : 1);
+		while (releaseLaunchers == 0) {
+			releaseLaunchers = showBlockingCLI(queueCheckFrequencyMetaLauncher, "Launching is blocked (via blockLaunchOfInstances())! Unblock to initiate launching of scheduled instances.");
+		}
+
+		// Now release actually scheduled launchers ...
+
 		for(final Entry<Class<? extends ParallelLauncher>, DynamicLauncherInstanceCounter> entry: launchersToBeLaunched.entrySet()){
 			if(entry.getValue().totalNumberOfInstancesToBeLaunched() <= 0){
 				System.err.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Invalid number of launches (" + entry.getValue().totalNumberOfInstancesToBeLaunched() + ") for launcher '" + entry.getKey().getSimpleName() + "', moving to next one...");
@@ -373,9 +413,10 @@ public class MetaLauncher extends Launcher {
 				boolean overrideMaxQueuedLauncher = false;
 				// Start number of ParallelLaunchers - but consider dynamic changes at runtime
 				for(int i = start; i < entry.getValue().totalNumberOfInstancesToBeLaunched(); i++){
-					System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Launch number " + (i + 1) 
+					System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " +
+							PREFIX + "Launch number " + (i + 1)
 							+ " (out of " + entry.getValue().totalNumberOfInstancesToBeLaunched() + ") for ParallelLauncher '" 
-							+ (entry.getKey().getSimpleName() != null ? entry.getKey().getSimpleName() : entry.getKey().getName())  + "'.");
+							+ (!entry.getKey().getSimpleName().isEmpty() ? entry.getKey().getSimpleName() : entry.getKey().getName())  + "'.");
 					ProcessBuilder processBuilder = 
 						(createOneJarFileForAllLaunchers ? 
 							new ProcessBuilder(path, "-cp", 
@@ -398,7 +439,8 @@ public class MetaLauncher extends Launcher {
 								String.valueOf(i + 1)));
 					//processBuilder.redirectErrorStream(true);
 					if(debug){
-						System.out.println(PREFIX + "About to start ParallelLauncher with command: " + processBuilder.command());
+						System.out.println(PREFIX + "About to start ParallelLauncher with command: " +
+								processBuilder.command());
 					}
 					// Generate name for process
 					String name = entry.getKey().getSimpleName() + " " + (i + 1);
@@ -413,12 +455,13 @@ public class MetaLauncher extends Launcher {
 						deleteIpcFile();
 						
 						if(process != null && !process.isFinished()){
-							System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": MetaLauncher: Launcher '" + name + "' successfully launched. Observe status in its Monitor GUI; closing the GUI ends the process.");
+							System.out.println(ParallelLauncher.getCurrentTimeString(true) +
+									": MetaLauncher: Launcher '" + name + "' successfully launched. Observe status in its Monitor GUI; closing the GUI ends the process.");
 							// Register with data structure that maintains reference to running ParallelLaunchers
 							runningProcesses.add(process.getProcess());
 							process.registerListener(processStatusListener);
 							// Consider this launch successful (and maintain stats-related information)
-							launchedLauncherInstances++;
+							launchedLauncherInstancesCount++;
 						} else if(process.isFinished()){
 							System.err.println(ParallelLauncher.getCurrentTimeString(true) + ": MetaLauncher: Note: Launcher '" + name + "' has already finished execution (just after launching).");
 						}
@@ -445,25 +488,32 @@ public class MetaLauncher extends Launcher {
 							// and if further are to be started - if not, no point of blocking here
 							i < (entry.getValue().totalNumberOfInstancesToBeLaunched() - 1)){
 						if(maxNumberOfQueuedOrRunningLaunchersAtOneTime == 0){
-							System.err.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Value zero for max. number of running ParallelLaunchers is invalid. Deactivated functionality.");
+							System.err.println(ParallelLauncher.getCurrentTimeString(true) + ": " +
+									PREFIX + "Value zero for max. number of running ParallelLaunchers is invalid. Deactivated functionality.");
 							maxNumberOfQueuedOrRunningLaunchersAtOneTime = -1;
 						}
 						// Wait for number of active ParallelLaunchers to drop, or user intervention
 						// Switch to release further ParallelLaunchers
-						boolean release = false;
-						// Check if less than max processes running
-						release = runningProcesses.size() < maxNumberOfQueuedOrRunningLaunchersAtOneTime;
+						boolean release;
+						// Check if less than max processes running (and launching not blocked)
+						release = !launchingBlocked && runningProcesses.size() < maxNumberOfQueuedOrRunningLaunchersAtOneTime;
 						// If not, do repeated checks
 						while(!release){
+
+							// Dynamically calculate queue check frequency (with ceiling of #maxQueueCheckFrequencyMetaLauncher)
+							long dynamicQueueRecheckFrequency = Math.max(queueCheckFrequencyMetaLauncher,
+									Math.min(getRuntimePerProcess(), maxQueueCheckFrequencyMetaLauncher));
+
 							System.out.println(ParallelLauncher.getCurrentTimeString(true) 
 									+ ": " + PREFIX + "Currently " + runningProcesses.size() + " active ParallelLaunchers. "
-									+ "Waiting for those to drop below " + maxNumberOfQueuedOrRunningLaunchersAtOneTime
-									+ " before starting further ones. Recheck in "
-									+ queueCheckFrequencyMetaLauncher + " ms.");
+									+ (launchingBlocked ? "Launching blocked for further launchers (until released). " :
+										"Waiting for those to drop below " + maxNumberOfQueuedOrRunningLaunchersAtOneTime
+										+ " before starting further ones. ") +
+									"Recheck in " + generateDuration(dynamicQueueRecheckFrequency).getExplicitRepresentation());
 							
 							// Shows CLI and waits for specified time or until user presses key. Assigns true to release additional
 							// launcher(s) if corresponding user action has been performed.
-							switch (showCLI(queueCheckFrequencyMetaLauncher, entry.getValue(), dynamicLauncher, launchedLauncherInstances, "")) {
+							switch (showCLI(dynamicQueueRecheckFrequency, entry.getValue(), dynamicLauncher, launchedLauncherInstancesCount, "")) {
 								case 0:
 									// Don't release any launcher
 									release = false;
@@ -476,6 +526,8 @@ public class MetaLauncher extends Launcher {
 									// Release all ParallelLaunchers
 									release = true;
 									overrideMaxQueuedLauncher = true;
+									// deactivate blocking
+									launchingBlocked = false;
 									break;
 								default:
 									// Don't release any launcher
@@ -489,12 +541,17 @@ public class MetaLauncher extends Launcher {
 							}
 							// Check if no user-caused release, check for condition-based release
 							if(!release){
-								if(maxNumberOfQueuedOrRunningLaunchersAtOneTime > -1 
-									// Keep rechecking as long as too many running processes/ParallelLaunchers
-									&& runningProcesses.size() >= maxNumberOfQueuedOrRunningLaunchersAtOneTime) {
-										// do nothing
+								if (launchingBlocked) {
+									System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX +
+											"Launching blocked! Please unblock to release further launchers (or override for selective launches - see menu).");
 								} else {
-									release = true;
+									if (maxNumberOfQueuedOrRunningLaunchersAtOneTime > -1
+											// Keep rechecking as long as too many running processes/ParallelLaunchers
+											&& runningProcesses.size() >= maxNumberOfQueuedOrRunningLaunchersAtOneTime) {
+										// do nothing
+									} else {
+										release = true;
+									}
 								}
 							}
 						}
@@ -506,11 +563,21 @@ public class MetaLauncher extends Launcher {
 		launchingFinished = true;
 		String msg = ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "All specified ParallelLaunchers have been started.";
 		
-		// Show CLI while processes are running
+		// Show CLI while processes are running (use original wait time - since it is only about timing out the remaining processes)
 		while (!runningProcesses.isEmpty()) {
-			showCLI(queueCheckFrequencyMetaLauncher, null, true, launchedLauncherInstances, msg);
+			showCLI(queueCheckFrequencyMetaLauncher, null, true, launchedLauncherInstancesCount, msg);
 		}
 		// No explicit termination, else we lose information about process termination from ProcessWrapper
+	}
+
+	/**
+	 * Returns the runtime per process.
+	 * @return Average runtime per process in ms.
+	 */
+	private static Long getRuntimePerProcess() {
+		// Reduce launched instances by one, because only finished instances should be considered in stats calculation
+		return new Float((terminationTimeOfLastProcess - startTime) /
+				(float)(launchedLauncherInstancesCount - 1)).longValue();
 	}
 	
 	/**
@@ -526,11 +593,15 @@ public class MetaLauncher extends Launcher {
 		
 		// Print some message
 		System.out.println(msg);
+
+		// Dynamically prepared key for output message generation
+		String blockStringKey = launchingBlocked ? "unblock" : "block";
 		
 		// Allow user selection
 		int result = awaitUserInput(waitTime, "recheck", 
-				"one", "release one additional launcher", 
-				inputToTriggerLaunchOfAllProcesses, "release all remaining ParallelLaunchers",
+				"one", "release one additional launcher (overrides blocking for one instance)",
+				inputToTriggerLaunchOfAllProcesses, "release all remaining ParallelLaunchers (overrides blocking)",
+				blockStringKey, blockStringKey + " release of any launchers",
 				"debug", "toggle debug mode", 
 				"time", "show the elapsed time since launcher start",
 				"stats", "show runtime per process and estimated remaining runtime",
@@ -552,14 +623,25 @@ public class MetaLauncher extends Launcher {
 				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Bypassing maximum number of permissible ParallelLaunchers and launch all remaining ones.");
 				return -1;
 			case 4:
+				if (launchingBlocked) {
+					launchingBlocked = false;
+					// Unblock release
+					System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Unblocking launching of instances.");
+				} else {
+					launchingBlocked = true;
+					// Block release indefinitely (until switched back on)
+					System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Blocking launching of instances. Note: No instance will be launched until blocking is released.");
+				}
+				return 0;
+			case 5:
 				// Toggle debug
 				toggleDebugMode();
 				return 0;
-			case 5:
+			case 6:
 				// Show elapsed time
 				System.out.println(PREFIX + "Elapsed time since launcher start: " + getElapsedRuntime().getSimpleRepresentation());
 				return 0;
-			case 6:
+			case 7:
 				// Show stats
 				int launched = launchedLauncherInstances + 1;
 				int toBeLaunched = 0;
@@ -571,24 +653,23 @@ public class MetaLauncher extends Launcher {
 					}
 				}
 				// Calculate average runtime
-				long runtimePerProcess = 0l;
-				if(terminationTimeOfLastProcess != 0l) {
-					// Reduce launched instances by one, because only finished instances should be considered in stats calculation
-					runtimePerProcess = new Float((terminationTimeOfLastProcess - startTime) / 
-							(float)(launchedLauncherInstances - 1)).longValue();
+				long runtimePerProcess = 0L;
+				if(terminationTimeOfLastProcess != 0L) {
+					// Retrieve runtime per process
+					runtimePerProcess = getRuntimePerProcess();
 					System.out.println(PREFIX + "Mean runtime per process: " + generateDuration(runtimePerProcess).getSimpleRepresentation());
 				}
 				// Predict remaining runtime based on runtime across all terminated processes run by this launcher instance.
 				long predictedRuntime = runtimePerProcess * toBeLaunched;
 				System.out.println(PREFIX + "Elapsed runtime: " + getElapsedRuntime().getSimpleRepresentation() + 
-						System.getProperty("line.separator") + (terminationTimeOfLastProcess == 0l ? 
+						System.getProperty("line.separator") + (terminationTimeOfLastProcess == 0L ?
 								"Not enough information yet to perform runtime prediction." :
 									"Estimated remaining runtime (for " + toBeLaunched + " processes): " +
 									generateDuration(predictedRuntime).getExplicitRepresentation() + 
 									System.getProperty("line.separator") + 
 									"Predicted shutdown time: " + calculateFutureDate(predictedRuntime, DateFormat.FULL)));
 				return 0;
-			case 7:
+			case 8:
 				// Show parameter file entries along with current values
 				System.out.println("Parameter '" + MAX_RUNNING_METALAUNCHERS_KEY + 
 						"' specifies the maximum number of running metalauncher (not launcher!) instances." + 
@@ -604,6 +685,60 @@ public class MetaLauncher extends Launcher {
 						"  In practice this is the commonly used parameter to control load. " +
 						System.getProperty("line.separator") +
 						"  Current value: " + maxNumberOfQueuedOrRunningLaunchersAtOneTime);
+				return 0;
+			default:
+				// Don't do anything
+				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Invalid user input '" + result + "' ignored.");
+				return 0;
+		}
+	}
+
+	/**
+	 * Shows the CLI for blocked MetaLaunchers (if run with {@link #blockLaunchOfInstances()}).
+	 * @param waitTime Waiting time until returning control.
+	 * @param msg Message to be printed before showing user selection
+	 * @return Returns 1 for continued waiting, and 0 for release.
+	 */
+	private static int showBlockingCLI(long waitTime, String msg) {
+
+		// Print some message
+		System.out.println(msg);
+
+		// Dynamically prepared key for output message generation
+		String blockStringKey = launchingBlocked ? "unblock" : "block";
+
+		// Allow user selection
+		int result = awaitUserInput(waitTime, "recheck",
+				blockStringKey, blockStringKey + " release of any launchers",
+				"debug", "toggle debug mode",
+				"time", "show the elapsed time since launcher start");
+
+		switch (result) {
+			case 0:
+				// Timeout
+				return 0;
+			case 1:
+				// Recheck (user pressed key)
+				return 0;
+			case 2:
+				if (launchingBlocked) {
+					launchingBlocked = false;
+					// Unblock release
+					System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Unblocking launching of instances.");
+					return 1;
+				} else {
+					launchingBlocked = true;
+					// Block release indefinitely (until switched back on)
+					System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Blocking launching of instances. Note: No instance will be launched until blocking is released.");
+				}
+				return 0;
+			case 3:
+				// Toggle debug
+				toggleDebugMode();
+				return 0;
+			case 4:
+				// Show elapsed time
+				System.out.println(PREFIX + "Elapsed time since launcher start: " + getElapsedRuntime().getSimpleRepresentation());
 				return 0;
 			default:
 				// Don't do anything
@@ -753,7 +888,9 @@ public class MetaLauncher extends Launcher {
 				if(process.isFinished()){
 					return;
 				}
-				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " + PREFIX + "Waiting for starting of process '" + name + "', recheck in " + defaultStartupWaitingTime + " ms.");
+				System.out.println(ParallelLauncher.getCurrentTimeString(true) + ": " +
+						PREFIX + "Waiting for starting of process '" + name +
+						"', recheck in " + defaultStartupWaitingTime + " ms.");
 				try {
 					Thread.sleep(defaultStartupWaitingTime);
 				} catch (InterruptedException e) {
