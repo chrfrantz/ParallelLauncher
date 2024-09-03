@@ -116,11 +116,13 @@ public class MetaLauncher extends Launcher {
 	protected static long queueCheckFrequencyMetaLauncher = 120000;
 
 	/**
-	 * Maximum (i.e., longest) queue check frequency (in case of adaptive adjustment)
+	 * Maximum (i.e., longest) queue check frequency (only used in case of adaptive adjustment)
 	 * to ensure sufficiently frequent recheck in case of long-running instances.
-	 * Value: 10 minutes (600000 ms)
+	 * Can differ from general check frequency {@link #queueCheckFrequencyMetaLauncher} in case of
+	 * customization.
+	 * Default: same value as {@link #queueCheckFrequencyMetaLauncher}.
 	 */
-	protected static long maxQueueCheckFrequencyMetaLauncher = 600000;
+	protected static long maxQueueCheckFrequencyMetaLauncher = queueCheckFrequencyMetaLauncher;
 	
 	/**
 	 * Sets the frequency which MetaLauncher instances use to check their 
