@@ -108,7 +108,7 @@ public class MetaLauncher extends Launcher {
 	public static int maxNumberOfQueuedOrRunningLaunchersAtOneTime = 4;
 	
 	/**
-	 * Waiting time (in milliseconds) between checks on running processes 
+	 * Default waiting time (in milliseconds) between checks on running processes
 	 * data structure in order to determine whether further ParallelLaunchers can
 	 * be started. Only used if 
 	 * {@link #maxNumberOfQueuedOrRunningLaunchersAtOneTime} != -1. Default: 2 minutes (120000 ms)
@@ -116,7 +116,15 @@ public class MetaLauncher extends Launcher {
 	protected static long queueCheckFrequencyMetaLauncher = 120000;
 
 	/**
-	 * Maximum (i.e., longest) queue check frequency (only used in case of adaptive adjustment)
+	 * Minimum (i.e., shortest time frame) queue check frequency (only used in case of adaptive adjustment)
+	 * to ensure a boundary value to maintain sufficient time frames for launching in case of
+	 * short-running processes.
+	 * Default value: {@link #queueCheckFrequencyMetaLauncher} / 4.
+	 */
+	protected static long minQueueCheckFrequencyMetaLauncher = queueCheckFrequencyMetaLauncher / 4;
+
+	/**
+	 * Maximum (i.e., longest time frame) queue check frequency (only used in case of adaptive adjustment)
 	 * to ensure sufficiently frequent recheck in case of long-running instances.
 	 * Can differ from general check frequency {@link #queueCheckFrequencyMetaLauncher} in case of
 	 * customization.
@@ -503,7 +511,7 @@ public class MetaLauncher extends Launcher {
 						while(!release){
 
 							// Dynamically calculate queue check frequency (with ceiling of #maxQueueCheckFrequencyMetaLauncher)
-							long dynamicQueueRecheckFrequency = Math.max(queueCheckFrequencyMetaLauncher,
+							long dynamicQueueRecheckFrequency = Math.max(minQueueCheckFrequencyMetaLauncher,
 									Math.min(getRuntimePerProcess(), maxQueueCheckFrequencyMetaLauncher));
 
 							System.out.println(ParallelLauncher.getCurrentTimeString(true) 
