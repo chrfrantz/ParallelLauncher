@@ -615,7 +615,7 @@ public class MetaLauncher extends Launcher {
 				"debug", "toggle debug mode", 
 				"time", "show the elapsed time since launcher start",
 				"stats", "show runtime per process and estimated remaining runtime",
-				"help", "see a explanation of parameter file entries");
+				"help", "see an explanation of parameter file entries");
 		
 		switch (result) {
 			case 0:
