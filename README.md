@@ -27,8 +27,8 @@ Please consult 'example' subdirectory to see illustrative use of launchers with 
 
 # Common problems
 
-* Wrong JDK version: If the launched instances do not open a console window but rather close those immediately, enable ```redirectStdErrForLaunchedProcesses = true;``` in the main class of your launcher instance. This will write a log file upon next instantiation that contains stderr output.
-  * Check the log file in the project directory upon launching (order files by creation time to see it adjacent to the generated batch file used to control the execution). It will likely show the following content: 
+* Wrong JDK version: If the launched instances do not open a console window but rather close those immediately, enable ```redirectStdErrForLaunchedProcesses = true;``` in the main method of your ParallelLauncher instance (the file that extends ParallelLauncher to configure it for your specific application). This will write a log file upon instantiation that contains stderr output.
+  * Check the log file in the project directory upon launching (order files by creation time to see a file that ends on "_Console" adjacent to the generated batch file used to control the execution). It will likely show the following content: 
 ```Exception in thread "main" java.lang.UnsupportedOperationException: Setting a Security Manager is not supported
 	at java.base/java.lang.System.setSecurityManager(System.java:286)
 	at org.christopherfrantz.parallelLauncher.util.wrappers.WrapperExecutable.addExitCodeCapturingShutdownHook(WrapperExecutable.java:189)
