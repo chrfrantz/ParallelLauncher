@@ -187,9 +187,9 @@ public abstract class Launcher {
 		System.out.println(PREFIX + "Detected Java version: " + System.getProperty("java.version"));
 		int version = getVersion();
 		if (version > 8) {
-			throw new RuntimeException(PREFIX + "Java version " + version +
-					" does not support SecurityManager modifications, which ParallelLauncher relies on. " +
-					"Please use JDK 1.8 to run ParallelLauncher");
+			System.err.println(PREFIX + "Java version " + version +
+					" may not support SecurityManager modifications, which ParallelLauncher relies on. " +
+					"Please use JDK 1.8 to run ParallelLauncher.");
 		}
     }
 	

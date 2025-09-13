@@ -133,6 +133,8 @@ public class ProcessWrapper {
 	 * @param instantiator Which launcher instantiated this ProcessWrapper. Could be MetaLauncher or ParallelLauncher.
 	 */
 	public ProcessWrapper(final String name, final Process process, final Class instantiator) {
+		// Explicitly allow security manager; increases the chance of it working in Java versions beyond 1.8.
+		System.setProperty("java.security.manager", "allow");
 		this.process = process;
 		this.name = name;
 		new Thread(new Runnable() {
