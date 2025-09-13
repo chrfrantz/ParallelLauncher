@@ -149,6 +149,20 @@ public abstract class Launcher {
 		
 		return new Launcher.Duration(elapsedDays, elapsedHours, elapsedMinutes, elapsedSeconds);
 	}
+
+	/**
+	 * Extracts Java JDK version for downstream processing.
+	 * @return Extracted version number of JDK (not full JDK number)
+	 */
+	private static int getVersion() {
+		String version = System.getProperty("java.version");
+		if(version.startsWith("1.")) {
+			version = version.substring(2, 3);
+		} else {
+			int dot = version.indexOf(".");
+			if(dot != -1) { version = version.substring(0, dot); }
+		} return Integer.parseInt(version);
+	}
 	
 	/**
      * Instance of ProcessReader relevant to retrieve information about existing processes. 
@@ -168,6 +182,14 @@ public abstract class Launcher {
 			} else {
 				throw new RuntimeException(PREFIX + "ParallelLauncher could not detect Operating System. Sorry :(");
 			}
+		}
+		// Retrieve JDK version to check whether SecurityManager will cause issues
+		System.out.println(PREFIX + "Detected Java version: " + System.getProperty("java.version"));
+		int version = getVersion();
+		if (version > 8) {
+			throw new RuntimeException(PREFIX + "Java version " + version +
+					" does not support SecurityManager modifications, which ParallelLauncher relies on. " +
+					"Please use JDK 1.8 to run ParallelLauncher");
 		}
     }
 	
