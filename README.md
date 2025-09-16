@@ -1,5 +1,5 @@
 # ParallelLauncher
-Automates compilation and launching of Java executables with instance-specific parameterization alongside consideration of JDK choice, CPU core allocation, as well as multi-OS support. Further includes MetaLauncher to coordinate execution of multiple ParallelLauncher instances. Includes various helper utilities to generate parameter sets. Note that this framework has been written based on the JVM 8 security architecture and relies on features that are no longer accessible in more recent Java versions.
+Automates compilation and launching of Java executables with instance-specific parameterization alongside consideration of JDK choice, CPU core allocation, as well as multi-OS support. Further includes MetaLauncher to coordinate execution of multiple ParallelLauncher instances. Includes various helper utilities to generate parameter sets. Note that this framework has been written based on the JVM 8 security architecture and relies on features that are available until Java 16 (deprecated in Java 17, but available with explicit configuration up to version 23), but no longer accessible in more recent Java versions.
 
 Developer: Christopher Frantz
 
@@ -16,7 +16,7 @@ Developer: Christopher Frantz
 
 Please consult 'example' subdirectory to see illustrative use of launchers with various features.
 
-**Important: ParallelLauncher requires JDK 1.8 to function, since it relies on the ability to control the SecurityManager, which is not longer supported in more recent versions of Java. See below for details.**
+**Important: ParallelLauncher requires JDK 1.8 to Java 16 to function, since it relies on the ability to control the SecurityManager, which is not longer supported in more recent versions of Java. See below for details.**
 
 # Dependencies
 
@@ -29,9 +29,10 @@ Please consult 'example' subdirectory to see illustrative use of launchers with 
 
 * Wrong JDK version: If the launched instances do not open a console window but rather close those immediately, enable ```redirectStdErrForLaunchedProcesses = true;``` in the main method of your ParallelLauncher instance (the file that extends ParallelLauncher to configure it for your specific application). This will write a log file upon instantiation that contains stderr output.
   * Check the log file in the project directory upon launching (order files by creation time to see a file that ends on "_Console" adjacent to the generated batch file used to control the execution). It will likely show the following content: 
-```Exception in thread "main" java.lang.UnsupportedOperationException: Setting a Security Manager is not supported
+```
+Exception in thread "main" java.lang.UnsupportedOperationException: Setting a Security Manager is not supported
 	at java.base/java.lang.System.setSecurityManager(System.java:286)
 	at org.christopherfrantz.parallelLauncher.util.wrappers.WrapperExecutable.addExitCodeCapturingShutdownHook(WrapperExecutable.java:189)
 	at org.christopherfrantz.parallelLauncher.util.wrappers.WrapperExecutable.main(WrapperExecutable.java:100)
 ```
-  * This indicates that the launched instances are run with a JDK version different than 1.8 (later versions disable the SecurityManager and produce the error above). The fix is to review the PATH variable to contain an explicit reference to JDK 1.8's \bin folder that contains java.exe and javac.exe (in Windows). Verify by running "java -version" in a new command line window to see the JDK version.
+  * This indicates that the launched instances are run with a JDK version different than 16 (later versions disable the SecurityManager and produce the error above). The fix is to review the PATH variable to contain an explicit reference to JDK 1.8-16's \bin folder that contains java.exe and javac.exe (in Windows). Verify by running "java -version" in a new command line window to see the JDK version.
